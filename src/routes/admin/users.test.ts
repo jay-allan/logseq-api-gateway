@@ -193,6 +193,34 @@ describe('/admin/users', () => {
             expect(JSON.parse(res.body).isActive).toBe(false);
         });
 
+        it('revokes all refresh tokens when the password is reset', async () => {
+            const created = JSON.parse((await createUser('resetpw', 'viewer')).body);
+
+            // Log in to obtain a refresh token
+            const loginRes = await app.inject({
+                method: 'POST',
+                url: '/auth/login',
+                payload: { username: 'resetpw', password: 'Password1!' }
+            });
+            const { refreshToken } = JSON.parse(loginRes.body);
+
+            // Admin resets the password
+            await app.inject({
+                method: 'PATCH',
+                url: `/admin/users/${created.id}`,
+                headers: { Authorization: `Bearer ${adminToken}` },
+                payload: { password: 'NewPassword1!' }
+            });
+
+            // The old refresh token must now be invalid
+            const refreshRes = await app.inject({
+                method: 'POST',
+                url: '/auth/refresh',
+                payload: { refreshToken }
+            });
+            expect(refreshRes.statusCode).toBe(401);
+        });
+
         it('returns 404 for an unknown id', async () => {
             const res = await app.inject({
                 method: 'PATCH',
@@ -250,6 +278,98 @@ describe('/admin/users', () => {
 
             expect(res.statusCode).toBe(404);
         });
+
+        it('returns 409 when deleting the last active admin', async () => {
+            // The test suite has exactly one admin ('admin' from beforeAll).
+            // Resolve their ID via GET /admin/users.
+            const listRes = await app.inject({
+                method: 'GET',
+                url: '/admin/users',
+                headers: { Authorization: `Bearer ${adminToken}` }
+            });
+            const admins = JSON.parse(listRes.body).data.filter(
+                (u: { role: string; username: string }) => u.role === 'admin' && u.username === 'admin'
+            );
+            expect(admins).toHaveLength(1);
+
+            const res = await app.inject({
+                method: 'DELETE',
+                url: `/admin/users/${admins[0].id}`,
+                headers: { Authorization: `Bearer ${adminToken}` }
+            });
+
+            expect(res.statusCode).toBe(409);
+            expect(JSON.parse(res.body)).toMatchObject({
+                error: { code: 'CONFLICT' }
+            });
+        });
+    });
+});
+
+// ── Self-demotion guard ────────────────────────────────────────────────────────
+
+describe('Admin self-demotion guard', () => {
+    let app: FastifyInstance;
+    let adminToken: string;
+
+    beforeAll(async () => {
+        app = await buildTestApp();
+        adminToken = await getTokenForRole(app, 'admin', 'solo_admin');
+    });
+
+    afterAll(async () => {
+        await teardownTestApp(app);
+    });
+
+    it('returns 409 when the last admin tries to demote themselves', async () => {
+        const listRes = await app.inject({
+            method: 'GET',
+            url: '/admin/users',
+            headers: { Authorization: `Bearer ${adminToken}` }
+        });
+        const me = JSON.parse(listRes.body).data.find(
+            (u: { username: string }) => u.username === 'solo_admin'
+        );
+
+        const res = await app.inject({
+            method: 'PATCH',
+            url: `/admin/users/${me.id}`,
+            headers: { Authorization: `Bearer ${adminToken}` },
+            payload: { role: 'editor' }
+        });
+
+        expect(res.statusCode).toBe(409);
+        expect(JSON.parse(res.body)).toMatchObject({
+            error: { code: 'CONFLICT' }
+        });
+    });
+
+    it('allows role change when a second admin exists', async () => {
+        // Create a second admin so self-demotion is no longer the last
+        await app.inject({
+            method: 'POST',
+            url: '/admin/users',
+            headers: { Authorization: `Bearer ${adminToken}` },
+            payload: { username: 'second_admin', password: 'Password1!', role: 'admin' }
+        });
+
+        const listRes = await app.inject({
+            method: 'GET',
+            url: '/admin/users',
+            headers: { Authorization: `Bearer ${adminToken}` }
+        });
+        const me = JSON.parse(listRes.body).data.find(
+            (u: { username: string }) => u.username === 'solo_admin'
+        );
+
+        const res = await app.inject({
+            method: 'PATCH',
+            url: `/admin/users/${me.id}`,
+            headers: { Authorization: `Bearer ${adminToken}` },
+            payload: { role: 'editor' }
+        });
+
+        expect(res.statusCode).toBe(200);
     });
 });
 

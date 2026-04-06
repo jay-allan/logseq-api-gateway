@@ -1,6 +1,7 @@
 import { buildTestApp, teardownTestApp, getTokenForRole } from '../../test/helpers';
 import { createUser } from '../db/repositories/user.repository';
 import { hashPassword } from '../auth/password';
+import * as passwordModule from '../auth/password';
 import type { FastifyInstance } from 'fastify';
 
 describe('POST /auth/login', () => {
@@ -25,6 +26,21 @@ describe('POST /auth/login', () => {
         expect(JSON.parse(res.body)).toMatchObject({
             error: { code: 'UNAUTHORIZED' }
         });
+    });
+
+    it('runs a dummy bcrypt compare for unknown users (timing-oracle mitigation)', async () => {
+        // verifyPassword must be called even when the username does not exist,
+        // so that response time is indistinguishable from a wrong-password attempt.
+        const spy = jest.spyOn(passwordModule, 'verifyPassword');
+
+        await app.inject({
+            method: 'POST',
+            url: '/auth/login',
+            payload: { username: 'nonexistent_user', password: 'anything' }
+        });
+
+        expect(spy).toHaveBeenCalledTimes(1);
+        spy.mockRestore();
     });
 
     it('returns 401 for a wrong password', async () => {
@@ -210,5 +226,24 @@ describe('JWT protection', () => {
             headers: { Authorization: `Bearer ${token}` }
         });
         expect(res.statusCode).toBe(403);
+    });
+
+    it('rejects a token whose header claims a non-HS256 algorithm', async () => {
+        // Build a fake JWT with alg:none in the header by hand.
+        // The verify: { algorithms: ['HS256'] } config must reject it.
+        const header = Buffer.from(
+            JSON.stringify({ alg: 'none', typ: 'JWT' })
+        ).toString('base64url');
+        const payload = Buffer.from(
+            JSON.stringify({ sub: 'x', role: 'admin', username: 'x' })
+        ).toString('base64url');
+        const noneToken = `${header}.${payload}.`;
+
+        const res = await app.inject({
+            method: 'GET',
+            url: '/admin/users',
+            headers: { Authorization: `Bearer ${noneToken}` }
+        });
+        expect(res.statusCode).toBe(401);
     });
 });

@@ -4,7 +4,8 @@ import {
     findUserById,
     createUser,
     updateUser,
-    deleteUser
+    deleteUser,
+    countActiveAdmins
 } from '../../db/repositories/user.repository';
 import { hashPassword } from '../../auth/password';
 import { deleteAllUserTokens } from '../../db/repositories/refresh-token.repository';
@@ -206,7 +207,9 @@ export default async function usersRoute(
                     400: { description: 'Validation error', $ref: 'ErrorResponse#' },
                     401: { description: 'Unauthenticated', $ref: 'ErrorResponse#' },
                     403: { description: 'Forbidden', $ref: 'ErrorResponse#' },
-                    404: { description: 'User not found', $ref: 'ErrorResponse#' }
+                    404: { description: 'User not found', $ref: 'ErrorResponse#' },
+                    409: { description: 'Cannot demote last active admin', $ref: 'ErrorResponse#' },
+                    500: { description: 'Internal server error', $ref: 'ErrorResponse#' }
                 }
             }
         },
@@ -219,15 +222,37 @@ export default async function usersRoute(
                 isActive?: boolean;
             };
 
-            if (!findUserById(id)) {
+            const target = findUserById(id);
+            if (!target) {
                 return reply.code(404).send({
                     error: { code: 'NOT_FOUND', message: 'User not found' }
+                });
+            }
+
+            // Prevent the caller from demoting themselves away from admin when
+            // they are the last active admin.
+            if (
+                body.role !== undefined &&
+                body.role !== 'admin' &&
+                target.role === 'admin' &&
+                request.user.sub === id &&
+                countActiveAdmins() <= 1
+            ) {
+                return reply.code(409).send({
+                    error: {
+                        code: 'CONFLICT',
+                        message: 'Cannot demote the last active admin'
+                    }
                 });
             }
 
             const passwordHash = body.password
                 ? await hashPassword(body.password)
                 : undefined;
+
+            if (passwordHash) {
+                deleteAllUserTokens(id);
+            }
 
             const updated = updateUser(id, {
                 email: body.email,
@@ -264,16 +289,28 @@ export default async function usersRoute(
                     204: { description: 'User deleted', type: 'null' },
                     401: { description: 'Unauthenticated', $ref: 'ErrorResponse#' },
                     403: { description: 'Forbidden', $ref: 'ErrorResponse#' },
-                    404: { description: 'User not found', $ref: 'ErrorResponse#' }
+                    404: { description: 'User not found', $ref: 'ErrorResponse#' },
+                    409: { description: 'Cannot delete last active admin', $ref: 'ErrorResponse#' },
+                    500: { description: 'Internal server error', $ref: 'ErrorResponse#' }
                 }
             }
         },
         async (request, reply) => {
             const { id } = request.params as { id: string };
 
-            if (!findUserById(id)) {
+            const target = findUserById(id);
+            if (!target) {
                 return reply.code(404).send({
                     error: { code: 'NOT_FOUND', message: 'User not found' }
+                });
+            }
+
+            if (target.role === 'admin' && target.isActive && countActiveAdmins() <= 1) {
+                return reply.code(409).send({
+                    error: {
+                        code: 'CONFLICT',
+                        message: 'Cannot delete the last active admin'
+                    }
                 });
             }
 

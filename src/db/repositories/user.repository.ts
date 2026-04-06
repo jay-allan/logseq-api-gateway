@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { and, count, desc, eq, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { getDb } from '../client';
 import { users } from '../schema';
@@ -123,4 +123,13 @@ export function updateUser(
 
 export function deleteUser(id: string): void {
     getDb().delete(users).where(eq(users.id, id)).run();
+}
+
+export function countActiveAdmins(): number {
+    const row = getDb()
+        .select({ n: count() })
+        .from(users)
+        .where(and(eq(users.role, 'admin'), eq(users.isActive, true)))
+        .get();
+    return row?.n ?? 0;
 }

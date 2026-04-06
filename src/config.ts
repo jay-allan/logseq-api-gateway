@@ -22,7 +22,11 @@ const configSchema = z.object({
     ADMIN_PASSWORD: z.string().optional(),
 
     WRITE_QUEUE_MAX_DEPTH: z.coerce.number().int().positive().default(50),
-    WRITE_QUEUE_TIMEOUT_MS: z.coerce.number().int().positive().default(30000)
+    WRITE_QUEUE_TIMEOUT_MS: z.coerce.number().int().positive().default(30000),
+
+    // Auth endpoint rate limiting (independent of the global limit)
+    AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
+    AUTH_RATE_LIMIT_WINDOW: z.string().default('15 minutes')
 });
 
 export type Config = z.infer<typeof configSchema>;

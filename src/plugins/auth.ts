@@ -10,7 +10,13 @@ import { config } from '../config';
 async function authPlugin(app: FastifyInstance): Promise<void> {
     await app.register(fastifyJwt, {
         secret: config.JWT_SECRET,
-        sign: { expiresIn: config.JWT_ACCESS_TTL }
+        sign: {
+            algorithm: 'HS256',
+            expiresIn: config.JWT_ACCESS_TTL
+        },
+        verify: {
+            algorithms: ['HS256']
+        }
     });
 
     app.decorate(

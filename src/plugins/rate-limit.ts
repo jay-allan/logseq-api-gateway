@@ -6,12 +6,13 @@ async function rateLimitPlugin(app: FastifyInstance): Promise<void> {
     await app.register(fastifyRateLimit, {
         max: 200,
         timeWindow: '1 minute',
-        errorResponseBuilder: () => ({
-            error: {
-                code: 'TOO_MANY_REQUESTS',
-                message: 'Rate limit exceeded — try again later'
-            }
-        })
+        errorResponseBuilder: (_req, context) => {
+            const err = new Error(
+                `Rate limit exceeded — try again in ${context.after}`
+            ) as Error & { statusCode: number };
+            err.statusCode = context.statusCode;
+            return err;
+        }
     });
 }
 

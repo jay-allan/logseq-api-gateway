@@ -7,7 +7,7 @@ import {
     findRefreshToken,
     deleteRefreshToken
 } from '../db/repositories/refresh-token.repository';
-import { verifyPassword } from '../auth/password';
+import { verifyPassword, getSentinelHash } from '../auth/password';
 import {
     generateRefreshToken,
     hashRefreshToken,
@@ -21,9 +21,22 @@ export default async function authRoute(app: FastifyInstance): Promise<void> {
      * POST /auth/login
      * Exchange username + password for an access token and a refresh token.
      */
+    const authRateLimit = {
+        max: parseInt(process.env.AUTH_RATE_LIMIT_MAX ?? '10', 10),
+        timeWindow: process.env.AUTH_RATE_LIMIT_WINDOW ?? '15 minutes',
+        errorResponseBuilder: (_req: unknown, context: { after: string; statusCode: number }) => {
+            const err = new Error(
+                `Too many authentication attempts — try again in ${context.after}`
+            ) as Error & { statusCode: number };
+            err.statusCode = context.statusCode;
+            return err;
+        }
+    };
+
     app.post(
         '/login',
         {
+            config: { rateLimit: authRateLimit },
             schema: {
                 tags: ['Auth'],
                 operationId: 'login',
@@ -71,6 +84,10 @@ export default async function authRoute(app: FastifyInstance): Promise<void> {
 
             const user = findUserWithHashByUsername(username);
             if (!user) {
+                // Always run bcrypt even when the user doesn't exist so that
+                // response time is indistinguishable from a wrong-password
+                // attempt, preventing username enumeration via timing.
+                await verifyPassword(password, await getSentinelHash());
                 return reply.code(401).send({
                     error: { code: 'UNAUTHORIZED', message: 'Invalid credentials' }
                 });
@@ -106,6 +123,7 @@ export default async function authRoute(app: FastifyInstance): Promise<void> {
     app.post(
         '/refresh',
         {
+            config: { rateLimit: authRateLimit },
             schema: {
                 tags: ['Auth'],
                 operationId: 'refreshToken',
