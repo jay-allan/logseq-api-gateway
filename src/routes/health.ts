@@ -15,13 +15,22 @@ export default async function healthRoute(
         {
             schema: {
                 tags: ['Health'],
+                operationId: 'getHealth',
                 summary: 'Service liveness check',
                 description:
                     'Returns the current service status, write queue depth, and ' +
                     'whether the upstream Logseq instance is reachable.',
+                security: [],
                 response: {
                     200: { $ref: 'HealthResponse#' },
-                    503: { $ref: 'HealthResponse#' }
+                    503: {
+                        description: 'Service degraded (Logseq unreachable or queue backed up)',
+                        $ref: 'HealthResponse#'
+                    },
+                    500: {
+                        description: 'Internal server error',
+                        $ref: 'ErrorResponse#'
+                    }
                 }
             }
         },

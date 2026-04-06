@@ -30,6 +30,7 @@ export default async function blocksRoute(
             preHandler: auth,
             schema: {
                 tags: ['Blocks'],
+                operationId: 'getBlock',
                 summary: 'Get a block',
                 description:
                     'Returns the block with the given UUID. ' +
@@ -63,6 +64,10 @@ export default async function blocksRoute(
                     },
                     502: {
                         description: 'Logseq instance is unreachable',
+                        $ref: 'ErrorResponse#'
+                    },
+                    500: {
+                        description: 'Internal server error',
                         $ref: 'ErrorResponse#'
                     }
                 }
@@ -104,6 +109,7 @@ export default async function blocksRoute(
             preHandler: auth,
             schema: {
                 tags: ['Blocks'],
+                operationId: 'getBlockProperties',
                 summary: 'Get block properties',
                 description:
                     'Returns the key/value property map attached to the block. ' +
@@ -126,6 +132,10 @@ export default async function blocksRoute(
                     },
                     502: {
                         description: 'Logseq instance is unreachable',
+                        $ref: 'ErrorResponse#'
+                    },
+                    500: {
+                        description: 'Internal server error',
                         $ref: 'ErrorResponse#'
                     }
                 }
@@ -165,6 +175,7 @@ export default async function blocksRoute(
             preHandler: writeAuth,
             schema: {
                 tags: ['Blocks'],
+                operationId: 'insertChildBlock',
                 summary: 'Insert a child block',
                 description:
                     'Inserts a new block as a child of the specified block. ' +
@@ -207,6 +218,10 @@ export default async function blocksRoute(
                     502: {
                         description: 'Logseq instance is unreachable',
                         $ref: 'ErrorResponse#'
+                    },
+                    500: {
+                        description: 'Internal server error',
+                        $ref: 'ErrorResponse#'
                     }
                 }
             }
@@ -243,6 +258,7 @@ export default async function blocksRoute(
             preHandler: writeAuth,
             schema: {
                 tags: ['Blocks'],
+                operationId: 'insertSiblingBlock',
                 summary: 'Insert a sibling block',
                 description:
                     'Inserts a new block as a sibling of the specified block. ' +
@@ -292,6 +308,10 @@ export default async function blocksRoute(
                     502: {
                         description: 'Logseq instance is unreachable',
                         $ref: 'ErrorResponse#'
+                    },
+                    500: {
+                        description: 'Internal server error',
+                        $ref: 'ErrorResponse#'
                     }
                 }
             }
@@ -331,6 +351,7 @@ export default async function blocksRoute(
             preHandler: writeAuth,
             schema: {
                 tags: ['Blocks'],
+                operationId: 'batchInsertBlocks',
                 summary: 'Batch insert blocks',
                 description:
                     'Inserts an array of blocks under the specified parent block ' +
@@ -387,6 +408,10 @@ export default async function blocksRoute(
                     502: {
                         description: 'Logseq instance is unreachable',
                         $ref: 'ErrorResponse#'
+                    },
+                    500: {
+                        description: 'Internal server error',
+                        $ref: 'ErrorResponse#'
                     }
                 }
             }
@@ -426,6 +451,7 @@ export default async function blocksRoute(
             preHandler: writeAuth,
             schema: {
                 tags: ['Blocks'],
+                operationId: 'updateBlock',
                 summary: 'Update block content',
                 description: 'Replaces the content of the specified block.',
                 security: [{ bearerAuth: [] }],
@@ -457,6 +483,10 @@ export default async function blocksRoute(
                     502: {
                         description: 'Logseq instance is unreachable',
                         $ref: 'ErrorResponse#'
+                    },
+                    500: {
+                        description: 'Internal server error',
+                        $ref: 'ErrorResponse#'
                     }
                 }
             }
@@ -481,6 +511,7 @@ export default async function blocksRoute(
             preHandler: writeAuth,
             schema: {
                 tags: ['Blocks'],
+                operationId: 'upsertBlockProperty',
                 summary: 'Upsert a block property',
                 description:
                     'Creates or updates the specified property on the block.',
@@ -519,6 +550,10 @@ export default async function blocksRoute(
                     502: {
                         description: 'Logseq instance is unreachable',
                         $ref: 'ErrorResponse#'
+                    },
+                    500: {
+                        description: 'Internal server error',
+                        $ref: 'ErrorResponse#'
                     }
                 }
             }
@@ -546,6 +581,7 @@ export default async function blocksRoute(
             preHandler: writeAuth,
             schema: {
                 tags: ['Blocks'],
+                operationId: 'removeBlockProperty',
                 summary: 'Remove a block property',
                 description: 'Removes the specified property from the block.',
                 security: [{ bearerAuth: [] }],
@@ -579,6 +615,10 @@ export default async function blocksRoute(
                     502: {
                         description: 'Logseq instance is unreachable',
                         $ref: 'ErrorResponse#'
+                    },
+                    500: {
+                        description: 'Internal server error',
+                        $ref: 'ErrorResponse#'
                     }
                 }
             }
@@ -605,6 +645,7 @@ export default async function blocksRoute(
             preHandler: writeAuth,
             schema: {
                 tags: ['Blocks'],
+                operationId: 'moveBlock',
                 summary: 'Move a block',
                 description:
                     'Moves the specified block to a new position relative to ' +
@@ -645,6 +686,10 @@ export default async function blocksRoute(
                     502: {
                         description: 'Logseq instance is unreachable',
                         $ref: 'ErrorResponse#'
+                    },
+                    500: {
+                        description: 'Internal server error',
+                        $ref: 'ErrorResponse#'
                     }
                 }
             }
@@ -672,6 +717,7 @@ export default async function blocksRoute(
             preHandler: auth,
             schema: {
                 tags: ['Blocks'],
+                operationId: 'deleteBlock',
                 summary: 'Delete a block',
                 description:
                     'Deletes the specified block. ' +
@@ -690,6 +736,10 @@ export default async function blocksRoute(
                     },
                     403: {
                         description: 'Insufficient permissions',
+                        $ref: 'ErrorResponse#'
+                    },
+                    500: {
+                        description: 'Internal server error',
                         $ref: 'ErrorResponse#'
                     }
                 }

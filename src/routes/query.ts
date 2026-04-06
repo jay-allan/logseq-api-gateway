@@ -19,6 +19,7 @@ export default async function queryRoute(
             ],
             schema: {
                 tags: ['Query'],
+                operationId: 'executeQuery',
                 summary: 'Execute a Datalog query',
                 description:
                     'Passes a Datalog query directly to Logseq and returns the ' +
@@ -60,6 +61,10 @@ export default async function queryRoute(
                     },
                     502: {
                         description: 'Logseq instance is unreachable',
+                        $ref: 'ErrorResponse#'
+                    },
+                    500: {
+                        description: 'Internal server error',
                         $ref: 'ErrorResponse#'
                     }
                 }

@@ -26,9 +26,9 @@
         "lint": "eslint src/",
         "format": "prettier --write \"src/**/*.ts\" \"scripts/**/*.ts\"",
         "docs": "typedoc",
-        "generate:openapi": "ts-node scripts/generate-openapi.ts",
-        "lint:openapi": "npm run generate:openapi && rmoa --file openapi/spec.json",
-        "seed": "ts-node scripts/seed.ts"
+        "generate:openapi": "TS_NODE_PROJECT=tsconfig.scripts.json ts-node scripts/generate-openapi.ts",
+        "lint:openapi": "npm run generate:openapi && TS_NODE_PROJECT=tsconfig.scripts.json ts-node scripts/lint-openapi.ts",
+        "seed": "TS_NODE_PROJECT=tsconfig.scripts.json ts-node scripts/seed.ts"
     },
     "dependencies": {
         "@fastify/cors": "^10.0.2",

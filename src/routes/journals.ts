@@ -24,6 +24,7 @@ export default async function journalsRoute(
             preHandler: auth,
             schema: {
                 tags: ['Journals'],
+                operationId: 'listJournals',
                 summary: 'List all journal pages',
                 description:
                     'Returns a paginated list of all daily journal pages in the graph, ' +
@@ -42,6 +43,10 @@ export default async function journalsRoute(
                     },
                     502: {
                         description: 'Logseq instance is unreachable',
+                        $ref: 'ErrorResponse#'
+                    },
+                    500: {
+                        description: 'Internal server error',
                         $ref: 'ErrorResponse#'
                     }
                 }
@@ -77,6 +82,7 @@ export default async function journalsRoute(
             preHandler: auth,
             schema: {
                 tags: ['Journals'],
+                operationId: 'getJournal',
                 summary: 'Get a journal page by date',
                 description:
                     'Returns the journal page for the given date. ' +
@@ -113,6 +119,10 @@ export default async function journalsRoute(
                     },
                     502: {
                         description: 'Logseq instance is unreachable',
+                        $ref: 'ErrorResponse#'
+                    },
+                    500: {
+                        description: 'Internal server error',
                         $ref: 'ErrorResponse#'
                     }
                 }
@@ -157,6 +167,7 @@ export default async function journalsRoute(
             ],
             schema: {
                 tags: ['Journals'],
+                operationId: 'createJournal',
                 summary: 'Create a journal page',
                 description:
                     'Creates the daily journal page for the given date if it ' +
@@ -194,6 +205,10 @@ export default async function journalsRoute(
                     },
                     502: {
                         description: 'Logseq instance is unreachable',
+                        $ref: 'ErrorResponse#'
+                    },
+                    500: {
+                        description: 'Internal server error',
                         $ref: 'ErrorResponse#'
                     }
                 }

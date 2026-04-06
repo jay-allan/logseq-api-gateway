@@ -104,18 +104,22 @@ Depends on: Phase 2
 
 ---
 
-## Phase 5 — OpenAPI quality gate
+## Phase 5 — OpenAPI quality gate ✅ Complete
 
 Depends on: Phase 3
 
-- [ ] All routes have `summary` + `description`
-- [ ] All parameters have `description`
-- [ ] All 4xx/5xx responses documented on every route
-- [ ] All response bodies reference named component schemas
-- [ ] `npm run lint:openapi` exits 0 with `--min-score` threshold set
-- [ ] Swagger UI renders all routes correctly at `/docs`
+- [x] All routes have `summary` + `description`
+- [x] All parameters have `description`
+- [x] All 4xx/5xx responses documented on every route (including `500` and `502`)
+- [x] All response bodies reference named component schemas
+- [x] `operationId` on every operation (required for SDK generation score)
+- [x] `security: []` on public routes (health, login, refresh) to declare intentional no-auth
+- [x] `npm run lint:openapi` exits 0 at 87/100 (threshold: 80)
+- [x] Dev tooling config separated from app runtime config: `dev.config.json` (gitignored) holds `rmoaApiKey`; `.env` holds only app runtime vars
+- [x] `scripts/lint-openapi.ts` reads API key from `dev.config.json` with clear error if missing
+- [x] Swagger UI renders all routes correctly at `/docs`
 
-**Milestone:** `rmoa` passes in CI; Swagger UI shows complete documentation.
+**Milestone:** `rmoa` passes at 87/100 (threshold 80); Swagger UI shows complete documentation; 161 tests passing.
 
 ---
 
@@ -142,4 +146,4 @@ Depends on: Phase 5
 |---|----------|--------|
 | 1 | `logseq.DB.datascriptQuery` vs `logseq.db.q` naming | Unresolved — verify against running Logseq instance |
 | 2 | `deleteBlock` method name in Logseq API | Unresolved — return 501 until confirmed |
-| 3 | Page name encoding for namespace pages (containing `/`) | Unresolved — define encoding rule before Phase 3 ships |
+| 3 | Page name encoding for namespace pages (containing `/`) | Resolved — Fastify decodes `%2F` automatically; 8 tests in `namespace.test.ts` verify behaviour |

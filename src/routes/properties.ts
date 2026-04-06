@@ -18,6 +18,7 @@ export default async function propertiesRoute(
             preHandler: [app.authenticate, requirePermission('properties:read')],
             schema: {
                 tags: ['Properties'],
+                operationId: 'listProperties',
                 summary: 'List all property schemas',
                 description:
                     'Returns a paginated list of all property schemas defined ' +
@@ -36,6 +37,10 @@ export default async function propertiesRoute(
                     },
                     502: {
                         description: 'Logseq instance is unreachable',
+                        $ref: 'ErrorResponse#'
+                    },
+                    500: {
+                        description: 'Internal server error',
                         $ref: 'ErrorResponse#'
                     }
                 }

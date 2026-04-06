@@ -26,6 +26,7 @@ export default async function authRoute(app: FastifyInstance): Promise<void> {
         {
             schema: {
                 tags: ['Auth'],
+                operationId: 'login',
                 summary: 'Login',
                 description:
                     'Authenticates a user with username and password. ' +
@@ -44,10 +45,19 @@ export default async function authRoute(app: FastifyInstance): Promise<void> {
                         }
                     }
                 },
+                security: [],
                 response: {
                     200: { $ref: 'TokenPair#' },
+                    400: {
+                        description: 'Invalid request body',
+                        $ref: 'ErrorResponse#'
+                    },
                     401: {
                         description: 'Invalid credentials',
+                        $ref: 'ErrorResponse#'
+                    },
+                    500: {
+                        description: 'Internal server error',
                         $ref: 'ErrorResponse#'
                     }
                 }
@@ -98,6 +108,7 @@ export default async function authRoute(app: FastifyInstance): Promise<void> {
         {
             schema: {
                 tags: ['Auth'],
+                operationId: 'refreshToken',
                 summary: 'Refresh access token',
                 description:
                     'Exchanges a valid refresh token for a new JWT access token. ' +
@@ -112,10 +123,19 @@ export default async function authRoute(app: FastifyInstance): Promise<void> {
                         }
                     }
                 },
+                security: [],
                 response: {
                     200: { $ref: 'TokenPair#' },
+                    400: {
+                        description: 'Invalid request body',
+                        $ref: 'ErrorResponse#'
+                    },
                     401: {
                         description: 'Invalid or expired refresh token',
+                        $ref: 'ErrorResponse#'
+                    },
+                    500: {
+                        description: 'Internal server error',
                         $ref: 'ErrorResponse#'
                     }
                 }

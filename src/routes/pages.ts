@@ -20,6 +20,7 @@ export default async function pagesRoute(
             preHandler: auth,
             schema: {
                 tags: ['Pages'],
+                operationId: 'listPages',
                 summary: 'List all pages',
                 description:
                     'Returns a paginated list of all pages in the Logseq graph. ' +
@@ -38,6 +39,10 @@ export default async function pagesRoute(
                     },
                     502: {
                         description: 'Logseq instance is unreachable',
+                        $ref: 'ErrorResponse#'
+                    },
+                    500: {
+                        description: 'Internal server error',
                         $ref: 'ErrorResponse#'
                     }
                 }
@@ -67,6 +72,7 @@ export default async function pagesRoute(
             preHandler: auth,
             schema: {
                 tags: ['Pages'],
+                operationId: 'getPage',
                 summary: 'Get a page',
                 description:
                     'Returns the page with the given name. ' +
@@ -101,6 +107,10 @@ export default async function pagesRoute(
                     502: {
                         description: 'Logseq instance is unreachable',
                         $ref: 'ErrorResponse#'
+                    },
+                    500: {
+                        description: 'Internal server error',
+                        $ref: 'ErrorResponse#'
                     }
                 }
             }
@@ -133,6 +143,7 @@ export default async function pagesRoute(
             preHandler: auth,
             schema: {
                 tags: ['Pages'],
+                operationId: 'getPageBlocks',
                 summary: 'Get page block tree',
                 description:
                     'Returns the full block tree for the named page. ' +
@@ -164,6 +175,10 @@ export default async function pagesRoute(
                     },
                     502: {
                         description: 'Logseq instance is unreachable',
+                        $ref: 'ErrorResponse#'
+                    },
+                    500: {
+                        description: 'Internal server error',
                         $ref: 'ErrorResponse#'
                     }
                 }
@@ -197,6 +212,7 @@ export default async function pagesRoute(
             preHandler: auth,
             schema: {
                 tags: ['Pages'],
+                operationId: 'getPageLinks',
                 summary: 'Get page linked references',
                 description:
                     'Returns all pages that contain block references to the named page, ' +
@@ -224,6 +240,10 @@ export default async function pagesRoute(
                     },
                     502: {
                         description: 'Logseq instance is unreachable',
+                        $ref: 'ErrorResponse#'
+                    },
+                    500: {
+                        description: 'Internal server error',
                         $ref: 'ErrorResponse#'
                     }
                 }
@@ -260,6 +280,7 @@ export default async function pagesRoute(
             preHandler: writeAuth,
             schema: {
                 tags: ['Pages'],
+                operationId: 'createPage',
                 summary: 'Create a page',
                 description:
                     'Creates a new page with the given name. ' +
@@ -307,6 +328,10 @@ export default async function pagesRoute(
                     502: {
                         description: 'Logseq instance is unreachable',
                         $ref: 'ErrorResponse#'
+                    },
+                    500: {
+                        description: 'Internal server error',
+                        $ref: 'ErrorResponse#'
                     }
                 }
             }
@@ -347,6 +372,7 @@ export default async function pagesRoute(
             preHandler: writeAuth,
             schema: {
                 tags: ['Pages'],
+                operationId: 'renamePage',
                 summary: 'Rename a page',
                 description: 'Renames the specified page to a new name.',
                 security: [{ bearerAuth: [] }],
@@ -387,6 +413,10 @@ export default async function pagesRoute(
                     502: {
                         description: 'Logseq instance is unreachable',
                         $ref: 'ErrorResponse#'
+                    },
+                    500: {
+                        description: 'Internal server error',
+                        $ref: 'ErrorResponse#'
                     }
                 }
             }
@@ -411,6 +441,7 @@ export default async function pagesRoute(
             preHandler: writeAuth,
             schema: {
                 tags: ['Pages'],
+                operationId: 'deletePage',
                 summary: 'Delete a page',
                 description: 'Permanently deletes the named page from the graph.',
                 security: [{ bearerAuth: [] }],
@@ -437,6 +468,10 @@ export default async function pagesRoute(
                     502: {
                         description: 'Logseq instance is unreachable',
                         $ref: 'ErrorResponse#'
+                    },
+                    500: {
+                        description: 'Internal server error',
+                        $ref: 'ErrorResponse#'
                     }
                 }
             }
@@ -458,6 +493,7 @@ export default async function pagesRoute(
             preHandler: [app.authenticate, requirePermission('blocks:write')],
             schema: {
                 tags: ['Pages'],
+                operationId: 'appendBlockToPage',
                 summary: 'Append a block to a page',
                 description:
                     'Appends a new block to the end of the named page. ' +
@@ -508,6 +544,10 @@ export default async function pagesRoute(
                     },
                     502: {
                         description: 'Logseq instance is unreachable',
+                        $ref: 'ErrorResponse#'
+                    },
+                    500: {
+                        description: 'Internal server error',
                         $ref: 'ErrorResponse#'
                     }
                 }

@@ -324,6 +324,49 @@ const SHARED_SCHEMAS = [
         }
     },
     {
+        $id: 'UserList',
+        type: 'object',
+        description: 'List of gateway user accounts',
+        required: ['data'],
+        properties: {
+            data: {
+                type: 'array',
+                items: { $ref: 'User#' },
+                description: 'User accounts'
+            }
+        }
+    },
+    {
+        $id: 'QueueStatus',
+        type: 'object',
+        description: 'Current state of the write-serialization queue',
+        required: ['depth', 'maxDepth', 'timeoutMs'],
+        properties: {
+            depth: {
+                type: 'integer',
+                minimum: 0,
+                description: 'Number of write operations currently waiting in the queue'
+            },
+            maxDepth: {
+                type: 'integer',
+                description: 'Queue depth at which new writes are rejected with 503'
+            },
+            timeoutMs: {
+                type: 'integer',
+                description: 'Per-operation timeout in milliseconds'
+            }
+        }
+    },
+    {
+        $id: 'RoleMatrix',
+        type: 'object',
+        description: 'Static mapping of each role to its granted permissions',
+        additionalProperties: {
+            type: 'array',
+            items: { type: 'string', description: 'Permission name' }
+        }
+    },
+    {
         $id: 'QueryResult',
         type: 'object',
         description: 'Raw Datalog query result from Logseq',

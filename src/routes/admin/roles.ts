@@ -14,22 +14,17 @@ export default async function rolesRoute(
             ],
             schema: {
                 tags: ['Admin'],
+                operationId: 'listRoles',
                 summary: 'List roles and permissions',
                 description:
                     'Returns the static role-to-permission mapping for all three roles ' +
                     '(admin, editor, viewer). Requires admin role.',
                 security: [{ bearerAuth: [] }],
                 response: {
-                    200: {
-                        description: 'Role permission matrix',
-                        type: 'object',
-                        additionalProperties: {
-                            type: 'array',
-                            items: { type: 'string' }
-                        }
-                    },
+                    200: { $ref: 'RoleMatrix#' },
                     401: { description: 'Unauthenticated', $ref: 'ErrorResponse#' },
-                    403: { description: 'Forbidden', $ref: 'ErrorResponse#' }
+                    403: { description: 'Forbidden', $ref: 'ErrorResponse#' },
+                    500: { description: 'Internal server error', $ref: 'ErrorResponse#' }
                 }
             }
         },

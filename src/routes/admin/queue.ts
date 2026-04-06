@@ -16,34 +16,17 @@ export default async function queueRoute(
             ],
             schema: {
                 tags: ['Admin'],
+                operationId: 'getQueueStatus',
                 summary: 'Write queue status',
                 description:
                     'Returns the current write queue depth and configuration. ' +
                     'Requires admin role.',
                 security: [{ bearerAuth: [] }],
                 response: {
-                    200: {
-                        description: 'Queue status',
-                        type: 'object',
-                        required: ['depth', 'maxDepth', 'timeoutMs'],
-                        properties: {
-                            depth: {
-                                type: 'integer',
-                                minimum: 0,
-                                description: 'Number of writes currently waiting'
-                            },
-                            maxDepth: {
-                                type: 'integer',
-                                description: 'Queue size at which 503s are returned'
-                            },
-                            timeoutMs: {
-                                type: 'integer',
-                                description: 'Per-operation timeout in milliseconds'
-                            }
-                        }
-                    },
+                    200: { $ref: 'QueueStatus#' },
                     401: { description: 'Unauthenticated', $ref: 'ErrorResponse#' },
-                    403: { description: 'Forbidden', $ref: 'ErrorResponse#' }
+                    403: { description: 'Forbidden', $ref: 'ErrorResponse#' },
+                    500: { description: 'Internal server error', $ref: 'ErrorResponse#' }
                 }
             }
         },

@@ -18,6 +18,7 @@ export default async function tagsRoute(app: FastifyInstance): Promise<void> {
             preHandler: auth,
             schema: {
                 tags: ['Tags'],
+                operationId: 'listTags',
                 summary: 'List all tags',
                 description:
                     'Returns a paginated list of all tags (Logseq class pages) ' +
@@ -36,6 +37,10 @@ export default async function tagsRoute(app: FastifyInstance): Promise<void> {
                     },
                     502: {
                         description: 'Logseq instance is unreachable',
+                        $ref: 'ErrorResponse#'
+                    },
+                    500: {
+                        description: 'Internal server error',
                         $ref: 'ErrorResponse#'
                     }
                 }
@@ -63,6 +68,7 @@ export default async function tagsRoute(app: FastifyInstance): Promise<void> {
             preHandler: auth,
             schema: {
                 tags: ['Tags'],
+                operationId: 'getTagBlocks',
                 summary: 'Get blocks for a tag',
                 description:
                     'Returns all blocks in the graph that carry the specified tag.',
@@ -93,6 +99,10 @@ export default async function tagsRoute(app: FastifyInstance): Promise<void> {
                     },
                     502: {
                         description: 'Logseq instance is unreachable',
+                        $ref: 'ErrorResponse#'
+                    },
+                    500: {
+                        description: 'Internal server error',
                         $ref: 'ErrorResponse#'
                     }
                 }

@@ -29,23 +29,15 @@ export default async function usersRoute(
             preHandler,
             schema: {
                 tags: ['Admin'],
+                operationId: 'listUsers',
                 summary: 'List all users',
                 description: 'Returns all user accounts. Requires admin role.',
                 security: [{ bearerAuth: [] }],
                 response: {
-                    200: {
-                        type: 'object',
-                        required: ['data'],
-                        description: 'User list',
-                        properties: {
-                            data: {
-                                type: 'array',
-                                items: { $ref: 'User#' }
-                            }
-                        }
-                    },
+                    200: { $ref: 'UserList#' },
                     401: { description: 'Unauthenticated', $ref: 'ErrorResponse#' },
-                    403: { description: 'Forbidden', $ref: 'ErrorResponse#' }
+                    403: { description: 'Forbidden', $ref: 'ErrorResponse#' },
+                    500: { description: 'Internal server error', $ref: 'ErrorResponse#' }
                 }
             }
         },
@@ -61,6 +53,7 @@ export default async function usersRoute(
             preHandler,
             schema: {
                 tags: ['Admin'],
+                operationId: 'createUser',
                 summary: 'Create a user',
                 description: 'Creates a new user account. Requires admin role.',
                 security: [{ bearerAuth: [] }],
@@ -133,6 +126,7 @@ export default async function usersRoute(
             preHandler,
             schema: {
                 tags: ['Admin'],
+                operationId: 'getUser',
                 summary: 'Get a user',
                 description: 'Returns a single user by ID. Requires admin role.',
                 security: [{ bearerAuth: [] }],
@@ -170,6 +164,7 @@ export default async function usersRoute(
             preHandler,
             schema: {
                 tags: ['Admin'],
+                operationId: 'updateUser',
                 summary: 'Update a user',
                 description:
                     'Updates role, email, password, or active status of a user. ' +
@@ -252,6 +247,7 @@ export default async function usersRoute(
             preHandler,
             schema: {
                 tags: ['Admin'],
+                operationId: 'deleteUser',
                 summary: 'Delete a user',
                 description:
                     'Permanently deletes a user and all their refresh tokens. ' +

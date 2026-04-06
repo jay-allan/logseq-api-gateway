@@ -237,10 +237,32 @@ Never resolve the migrations path inside `src/db/client.ts` — the path must be
 
 ```bash
 npm run generate:openapi   # writes openapi/spec.json
-npm run lint:openapi       # generate + rmoa validation
+npm run lint:openapi       # generate + rmoa quality check
 ```
 
-`scripts/generate-openapi.ts` boots the Fastify app with `logseqConnect: false` (no real Logseq needed) and calls `fastify.swagger()`. The spec is written to `openapi/spec.json` and validated by `rmoa`. The `prebuild` script runs this automatically.
+`scripts/generate-openapi.ts` boots the Fastify app with `logseqConnect: false` (no real Logseq instance needed) and calls `fastify.swagger()`. The spec is written to `openapi/spec.json` and scored by `rmoa`. The `prebuild` script runs this automatically.
+
+**rmoa API key required.** `npm run lint:openapi` calls `rmoa lint` which uses the [Rate My OpenAPI](https://api.ratemyopenapi.com/docs) cloud service. API keys belong in `dev.config.json` — a gitignored JSON file for development tooling secrets, separate from `.env` which is for application runtime config.
+
+1. Sign up at https://api.ratemyopenapi.com/docs to get a free API key.
+2. Copy the example config:
+   ```bash
+   cp dev.config.example.json dev.config.json
+   ```
+3. Fill in your key:
+   ```json
+   {
+       "rmoaApiKey": "your-actual-key-here"
+   }
+   ```
+4. Run normally — no env vars needed:
+   ```bash
+   npm run lint:openapi
+   ```
+
+**Never commit your API key.** `dev.config.json` is in `.gitignore`. `dev.config.example.json` contains only the placeholder value and is safe to commit. The minimum passing score is 80/100 (`--minimum-score 80` in `scripts/lint-openapi.ts`).
+
+> `openapi/spec.json` is also gitignored — it is always regenerated from source.
 
 ## Key gotchas
 
