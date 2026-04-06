@@ -88,14 +88,19 @@ All write operations route through `enqueueWrite()` automatically via the Logseq
 
 ---
 
-## Phase 4 — Pagination & list hardening
+## Phase 4 — Pagination & list hardening ✅ Complete
 
 Depends on: Phase 2
 
-- [ ] `?limit=N&offset=N` query parameters on all list endpoints
-- [ ] Response wrapper: `{ data: [...], meta: { total, limit, offset } }`
-- [ ] `getAllPages` on large graphs: server-side pagination from day 1
-- [ ] Page name URL encoding for namespaced pages (containing `/`)
+- [x] `?limit=N&offset=N` query parameters on all list endpoints
+- [x] Response wrapper: `{ data: [...], meta: { total, limit, offset } }`
+- [x] `getAllPages` on large graphs: server-side pagination from day 1
+- [x] Page name URL encoding for namespaced pages (containing `/`)
+  - Fastify decodes `%2F` in path params automatically — no code changes needed
+  - `GET /pages/projects%2Falpha` → `callLogseq('getPage', ['projects/alpha'])`
+  - Unencoded slashes (`/pages/projects/alpha`) return 404 (no route match), which is correct
+  - Verified with 8 dedicated namespace encoding tests in `src/routes/namespace.test.ts`
+- [x] 8 new tests; 161 total tests passing
 
 ---
 
