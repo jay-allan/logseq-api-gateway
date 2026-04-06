@@ -10,6 +10,22 @@ Logseq's built-in HTTP API is a single `POST /api` endpoint designed for plugin 
 - **Write safety** — a serialization queue ensures only one write executes at a time, preventing data corruption in concurrent scenarios
 - **API quality** — a proper REST interface with OpenAPI 3.1 documentation validated by `rmoa`
 
+## Logseq built-in API vs this gateway
+
+| Feature | Logseq built-in HTTP API | This gateway |
+|---|:---:|---|
+| **API style** | Single `POST /api` endpoint; callers specify the method name in the body | ✅ Resource-oriented REST (`GET /pages/:name`, `PATCH /blocks/:uuid`, …) |
+| **Authentication** | ⚠️ Single shared token in the `Authorization` header | ✅ JWT access tokens (15 min) + rotating refresh tokens (7 days) per user |
+| **Multiple users** | ❌ One token for all callers | ✅ Each user has their own credentials and session |
+| **Access control** | ❌ Any token holder can call any method | ✅ Role-based: `viewer` (read-only), `editor` (read/write), `admin` (full) |
+| **Concurrent write safety** | ❌ Parallel writes can corrupt graph data | ✅ In-memory FIFO mutex; at most one write runs at a time |
+| **API documentation** | ❌ None | ✅ OpenAPI 3.1 spec + Swagger UI at `/docs`; validated by `rmoa` |
+| **Rate limiting** | ❌ None | ✅ Global limit + stricter per-route limit on auth endpoints |
+| **User management** | ❌ None | ✅ Full CRUD via `/admin/users`; password reset revokes existing sessions |
+| **Health endpoint** | ❌ None | ✅ `GET /health` reports Logseq reachability and write queue depth |
+| **Request tracing** | ❌ None | ✅ `X-Request-Id` echoed on every response; included in server logs |
+| **Intended use** | Local plugin automation from the same machine | Multi-client remote access (scripts, CI, integrations, team tools) |
+
 ## Prerequisites
 
 - Node.js 20+
@@ -332,7 +348,7 @@ curl -s -X PATCH http://localhost:3000/admin/users/<id> \
   -d '{"password": "NewPassword1!"}'
 ```
 
-The new password is hashed immediately. The user's existing refresh tokens remain valid until they expire or are used; there is no automatic revocation on password change. To force an immediate logout, delete the user and recreate them, or deactivate the account until the token TTL passes.
+The new password is hashed immediately and all of the user's existing refresh tokens are revoked. Their current access token remains valid until it expires (up to 15 minutes), after which they must log in again with the new password.
 
 ---
 
