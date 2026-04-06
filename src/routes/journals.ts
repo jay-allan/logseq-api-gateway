@@ -3,7 +3,7 @@ import { callLogseq } from '../logseq/client';
 import { Methods } from '../logseq/methods';
 import { requirePermission } from '../auth/rbac';
 import type { LogseqPage } from '../types/logseq';
-import { paginate, paginationQuerySchema } from './utils';
+import { normalizeDatascriptEntity, paginate, paginationQuerySchema } from './utils';
 
 /** Datascript query that fetches all journal pages. */
 const ALL_JOURNALS_QUERY =
@@ -65,8 +65,13 @@ export default async function journalsRoute(
             );
 
             const pages = (raw ?? [])
-                .map(([page]) => page)
-                .sort((a, b) => (b.journalDay ?? 0) - (a.journalDay ?? 0));
+                .map(([page]) => normalizeDatascriptEntity(
+                    page as unknown as Record<string, unknown>
+                ))
+                .sort((a, b) =>
+                    ((b.journalDay as number) ?? 0) -
+                    ((a.journalDay as number) ?? 0)
+                );
 
             return reply.code(200).send(paginate(pages, limit, offset));
         }
@@ -150,7 +155,11 @@ export default async function journalsRoute(
                 });
             }
 
-            return reply.code(200).send(raw[0][0]);
+            return reply.code(200).send(
+                normalizeDatascriptEntity(
+                    raw[0][0] as unknown as Record<string, unknown>
+                )
+            );
         }
     );
 

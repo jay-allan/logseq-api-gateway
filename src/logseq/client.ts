@@ -60,13 +60,13 @@ async function executeCall<T>(method: string, args: unknown[]): Promise<T> {
 
 /**
  * Sends a lightweight probe to Logseq to check reachability.
- * Returns true if Logseq responded, false otherwise.
+ * Returns the error message if unreachable, or null if reachable.
  */
-export async function probeLogseq(): Promise<boolean> {
+export async function probeLogseq(): Promise<string | null> {
     try {
         await executeCall('logseq.App.getCurrentGraph', []);
-        return true;
-    } catch {
-        return false;
+        return null;
+    } catch (err) {
+        return (err as Error).message ?? 'unknown error';
     }
 }

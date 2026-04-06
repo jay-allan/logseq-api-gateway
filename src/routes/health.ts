@@ -37,7 +37,7 @@ export default async function healthRoute(
         async (_request, reply) => {
             const queueDepth = getQueueDepth();
             const logseqReachable = opts.logseqConnect
-                ? await probeLogseq()
+                ? (await probeLogseq()) === null
                 : false;
 
             const degraded = !logseqReachable || queueDepth > 0;

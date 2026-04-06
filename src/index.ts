@@ -51,10 +51,10 @@ async function main(): Promise<void> {
     }
 
     // Warn (don't crash) if Logseq is unreachable at startup
-    probeLogseq().then((reachable) => {
-        if (!reachable) {
+    probeLogseq().then((err) => {
+        if (err !== null) {
             Logger.warn(
-                'Logseq is not reachable at startup. ' +
+                `Logseq is not reachable at startup (${err}). ` +
                 'The gateway will continue to run; Logseq routes will return 502 ' +
                 'until the connection is restored.'
             );

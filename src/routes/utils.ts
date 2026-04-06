@@ -1,5 +1,26 @@
 import type { PaginationMeta } from '../types/api';
 
+/**
+ * Normalises a single entity returned by logseq.DB.datascriptQuery.
+ * Datascript returns Clojure-style keys: kebab-case (`original-name`) and
+ * predicate suffixes (`journal?`).  This converts them to camelCase so they
+ * match the Editor API shape and the gateway's OpenAPI schemas.
+ *
+ * Already-camelCase keys pass through unchanged (safe to call on any object).
+ */
+export function normalizeDatascriptEntity(
+    entity: Record<string, unknown>
+): Record<string, unknown> {
+    const out: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(entity)) {
+        const normalized = key
+            .replace(/\?$/, '')
+            .replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
+        out[normalized] = value;
+    }
+    return out;
+}
+
 export interface Paginated<T> {
     data: T[];
     meta: PaginationMeta;

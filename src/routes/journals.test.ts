@@ -7,7 +7,7 @@ import {
 
 jest.mock('../logseq/client', () => ({
     callLogseq: jest.fn(),
-    probeLogseq: jest.fn().mockResolvedValue(true)
+    probeLogseq: jest.fn().mockResolvedValue(null)
 }));
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -47,6 +47,32 @@ describe('Journals routes', () => {
     // ── GET /journals ───────────────────────────────────────────────────────
 
     describe('GET /journals', () => {
+        it('normalises datascript kebab-case keys in list results', async () => {
+            callLogseq.mockResolvedValueOnce([
+                [{
+                    id: 10,
+                    uuid: 'cccccccc-0000-0000-0000-000000000001',
+                    name: 'jan 5th, 2024',
+                    'original-name': 'Jan 5th, 2024',
+                    'journal?': true,
+                    'journal-day': 20240105
+                }]
+            ]);
+
+            const res = await app.inject({
+                method: 'GET',
+                url: '/journals',
+                headers: { Authorization: `Bearer ${viewerToken}` }
+            });
+
+            expect(res.statusCode).toBe(200);
+            const [page] = JSON.parse(res.body).data;
+            expect(page.originalName).toBe('Jan 5th, 2024');
+            expect(page.journal).toBe(true);
+            expect(page.journalDay).toBe(20240105);
+            expect(page['original-name']).toBeUndefined();
+        });
+
         it('returns 200 with paginated journal pages', async () => {
             // datascriptQuery returns [[page], [page], ...] format
             callLogseq.mockResolvedValueOnce([
@@ -108,6 +134,36 @@ describe('Journals routes', () => {
     // ── GET /journals/:date ─────────────────────────────────────────────────
 
     describe('GET /journals/:date', () => {
+        it('normalises datascript kebab-case keys to camelCase', async () => {
+            // Real Logseq datascript output uses Clojure-style keys
+            const kebabPage = {
+                id: 10,
+                uuid: 'cccccccc-0000-0000-0000-000000000001',
+                name: 'jan 5th, 2024',
+                'original-name': 'Jan 5th, 2024',
+                'journal?': true,
+                'journal-day': 20240105,
+                'created-at': 1704412800000,
+                'updated-at': 1704412800000
+            };
+            callLogseq.mockResolvedValueOnce([[kebabPage]]);
+
+            const res = await app.inject({
+                method: 'GET',
+                url: '/journals/2024-01-05',
+                headers: { Authorization: `Bearer ${viewerToken}` }
+            });
+
+            expect(res.statusCode).toBe(200);
+            const body = JSON.parse(res.body);
+            expect(body.originalName).toBe('Jan 5th, 2024');
+            expect(body.journal).toBe(true);
+            expect(body.journalDay).toBe(20240105);
+            expect(body.createdAt).toBe(1704412800000);
+            expect(body['original-name']).toBeUndefined();
+            expect(body['journal?']).toBeUndefined();
+        });
+
         it('returns 200 with the journal page', async () => {
             // datascriptQuery returns [[page]] for a single result
             callLogseq.mockResolvedValueOnce([[MOCK_JOURNAL_PAGE]]);

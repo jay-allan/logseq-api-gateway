@@ -7,7 +7,7 @@ import {
 
 jest.mock('../logseq/client', () => ({
     callLogseq: jest.fn(),
-    probeLogseq: jest.fn().mockResolvedValue(true)
+    probeLogseq: jest.fn().mockResolvedValue(null)
 }));
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
