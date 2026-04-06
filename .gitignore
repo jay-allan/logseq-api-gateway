@@ -1,4 +1,5 @@
 /dist
+*.tsbuildinfo
 /.parcel-cache
 /tmp
 /docs

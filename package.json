@@ -15,7 +15,7 @@
     },
     "scripts": {
         "predev": "npm run build:dev",
-        "dev": "concurrently \"tsc --watch\" \"nodemon --watch dist dist/index.js\"",
+        "dev": "concurrently \"tsc --watch\" \"nodemon --delay 2 --watch dist dist/index.js\"",
         "build": "npm run typecheck && npm run lint:openapi && parcel build && npm run copy:migrations",
         "build:dev": "tsc && npm run copy:migrations",
         "typecheck": "tsc --noEmit",
