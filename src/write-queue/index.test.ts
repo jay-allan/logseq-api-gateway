@@ -1,4 +1,4 @@
-import { enqueueWrite, getQueueDepth } from './index';
+import { enqueueWrite, getQueueDepth, waitForDrain } from './index';
 import { config } from '../config';
 
 describe('enqueueWrite', () => {
@@ -126,5 +126,48 @@ describe('enqueueWrite', () => {
                 code: 'SERVICE_UNAVAILABLE'
             });
         }, 10_000);
+    });
+});
+
+describe('waitForDrain', () => {
+    it('resolves immediately when no operations are pending', async () => {
+        expect(getQueueDepth()).toBe(0);
+        await expect(waitForDrain()).resolves.toBeUndefined();
+    });
+
+    it('waits until an in-flight operation completes before resolving', async () => {
+        let operationDone = false;
+
+        const write = enqueueWrite(
+            () =>
+                new Promise<void>((resolve) => {
+                    setTimeout(() => {
+                        operationDone = true;
+                        resolve();
+                    }, 60);
+                })
+        );
+
+        // waitForDrain should not resolve before the operation finishes
+        await waitForDrain();
+
+        expect(operationDone).toBe(true);
+        await write; // clean up
+    });
+
+    it('waits until all queued operations complete', async () => {
+        const completed: number[] = [];
+
+        const writes = [1, 2, 3].map((n) =>
+            enqueueWrite(async () => {
+                await new Promise<void>((r) => setTimeout(r, 20));
+                completed.push(n);
+            })
+        );
+
+        await waitForDrain();
+
+        expect(completed).toEqual([1, 2, 3]);
+        await Promise.all(writes);
     });
 });

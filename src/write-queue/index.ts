@@ -61,3 +61,19 @@ export async function enqueueWrite<T>(
 export function getQueueDepth(): number {
     return pendingDepth;
 }
+
+/**
+ * Resolves once the write queue is fully drained — i.e. no operations are
+ * waiting and the mutex is not held by a running operation.
+ * Polls every 50 ms. Times out after `timeoutMs` (default 30 s).
+ */
+export async function waitForDrain(timeoutMs = 30_000): Promise<void> {
+    const deadline = Date.now() + timeoutMs;
+    while (pendingDepth > 0 || mutex.isLocked()) {
+        if (Date.now() >= deadline) {
+            Logger.warn('waitForDrain: timed out waiting for write queue to drain');
+            return;
+        }
+        await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    }
+}

@@ -1,9 +1,11 @@
 import Fastify from 'fastify';
 import type { FastifyInstance } from 'fastify';
+import { v4 as uuidv4 } from 'uuid';
 
 import authPlugin from './plugins/auth';
 import corsPlugin from './plugins/cors';
 import rateLimitPlugin from './plugins/rate-limit';
+import requestIdPlugin from './plugins/request-id';
 import swaggerPlugin from './plugins/swagger';
 import { errorHandlerPlugin } from './plugins/error-handler';
 
@@ -29,6 +31,8 @@ export async function buildApp(
 ): Promise<FastifyInstance> {
     const app = Fastify({
         logger: config.NODE_ENV !== 'test',
+        requestIdHeader: 'x-request-id',
+        genReqId: () => uuidv4(),
         ajv: {
             customOptions: {
                 removeAdditional: true,
@@ -38,11 +42,12 @@ export async function buildApp(
         }
     });
 
-    // Plugins (order matters: swagger → cors → rate-limit → auth)
+    // Plugins (order matters: swagger → cors → rate-limit → auth → request-id)
     await app.register(swaggerPlugin);
     await app.register(corsPlugin);
     await app.register(rateLimitPlugin);
     await app.register(authPlugin);
+    await app.register(requestIdPlugin);
     await errorHandlerPlugin(app);
 
     // Routes

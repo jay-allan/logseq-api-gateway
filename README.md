@@ -137,9 +137,7 @@ Refresh tokens are single-use and rotated on every call.
 | Manage users (`/admin/users`) | | | ✓ |
 | View queue status (`/admin/queue`) | | | ✓ |
 
-### Planned endpoints (Phase 4+)
-
-The following are planned but not yet available:
+### Known limitations
 
 | Group | Endpoint | Notes |
 |---|---|---|
@@ -185,6 +183,319 @@ The following are planned but not yet available:
 | `POST` | `/query` | editor+ | Execute a Datalog query |
 | `GET` | `/docs` | None | Swagger UI |
 | `GET` | `/openapi.json` | None | Raw OpenAPI 3.1 spec |
+
+## Administering users
+
+There is no web interface. All user management is done through the REST API. This section is a complete operational guide for managing users, roles, and access using `curl`.
+
+### Before you start — store your token
+
+Typing a JWT on every command is error-prone. Store it in a shell variable immediately after login:
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:3000/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username": "admin", "password": "your-password"}' \
+  | jq -r '.accessToken')
+```
+
+All examples below use `$TOKEN`. Access tokens expire after 15 minutes (configurable via `JWT_ACCESS_TTL`). When the token expires, re-run the login command to get a fresh one, or use the refresh token flow described in the [Authentication](#authentication) section.
+
+---
+
+### Create a user
+
+```bash
+curl -s -X POST http://localhost:3000/admin/users \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "username": "alice",
+    "password": "SecurePass1!",
+    "role": "editor",
+    "email": "alice@example.com"
+  }'
+```
+
+- `username` — minimum 3 characters, must be unique
+- `password` — minimum 8 characters
+- `role` — one of `admin`, `editor`, or `viewer` (see [Roles and permissions](#roles-and-permissions))
+- `email` — optional
+
+**Response (201):**
+
+```json
+{
+  "id": "3f2b1a00-...",
+  "username": "alice",
+  "email": "alice@example.com",
+  "role": "editor",
+  "isActive": true,
+  "createdAt": "2025-01-15T10:30:00.000Z",
+  "updatedAt": "2025-01-15T10:30:00.000Z"
+}
+```
+
+Save the `id` from the response — you need it for all subsequent operations on that user.
+
+**Error responses:**
+- `400` — validation failure (username too short, password too short, invalid role)
+- `409` — username already taken
+
+---
+
+### List all users
+
+```bash
+curl -s http://localhost:3000/admin/users \
+  -H "Authorization: Bearer $TOKEN" \
+  | jq '.data[] | {id, username, role, isActive}'
+```
+
+This is the primary way to find a user's `id`. The response is an array under the `data` key:
+
+```json
+{
+  "data": [
+    {
+      "id": "1a2b3c4d-...",
+      "username": "admin",
+      "role": "admin",
+      "isActive": true,
+      "createdAt": "...",
+      "updatedAt": "..."
+    },
+    {
+      "id": "3f2b1a00-...",
+      "username": "alice",
+      "email": "alice@example.com",
+      "role": "editor",
+      "isActive": true,
+      "createdAt": "...",
+      "updatedAt": "..."
+    }
+  ]
+}
+```
+
+To find a user's ID by username:
+
+```bash
+curl -s http://localhost:3000/admin/users \
+  -H "Authorization: Bearer $TOKEN" \
+  | jq -r '.data[] | select(.username == "alice") | .id'
+```
+
+---
+
+### Get a single user
+
+```bash
+curl -s http://localhost:3000/admin/users/<id> \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Returns `404` if the ID does not exist.
+
+---
+
+### Change a user's role
+
+```bash
+curl -s -X PATCH http://localhost:3000/admin/users/<id> \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"role": "viewer"}'
+```
+
+Valid values: `admin`, `editor`, `viewer`. The change takes effect immediately — the user's next authenticated request will use the new role. Any existing access token they hold remains valid until it expires (up to 15 minutes); the new role is enforced on the next login.
+
+---
+
+### Update a user's email
+
+```bash
+curl -s -X PATCH http://localhost:3000/admin/users/<id> \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"email": "newemail@example.com"}'
+```
+
+---
+
+### Reset a user's password
+
+```bash
+curl -s -X PATCH http://localhost:3000/admin/users/<id> \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"password": "NewPassword1!"}'
+```
+
+The new password is hashed immediately. The user's existing refresh tokens remain valid until they expire or are used; there is no automatic revocation on password change. To force an immediate logout, delete the user and recreate them, or deactivate the account until the token TTL passes.
+
+---
+
+### Deactivate a user
+
+Deactivation is **reversible** and prevents the user from logging in or refreshing their session without deleting their account or history.
+
+```bash
+curl -s -X PATCH http://localhost:3000/admin/users/<id> \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"isActive": false}'
+```
+
+A deactivated user:
+- Cannot log in (login returns `401`)
+- Cannot use their refresh token to get a new access token (refresh returns `401`)
+- Retains their account, role, and refresh token records in the database
+
+To reactivate:
+
+```bash
+curl -s -X PATCH http://localhost:3000/admin/users/<id> \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"isActive": true}'
+```
+
+---
+
+### Combine multiple updates in one request
+
+`PATCH` accepts any combination of `role`, `email`, `password`, and `isActive` in a single request:
+
+```bash
+curl -s -X PATCH http://localhost:3000/admin/users/<id> \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "role": "viewer",
+    "email": "readonly@example.com",
+    "isActive": true
+  }'
+```
+
+---
+
+### Delete a user
+
+Deletion is **permanent**. The user's account and all their refresh tokens are removed immediately.
+
+```bash
+curl -s -X DELETE http://localhost:3000/admin/users/<id> \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Returns `204 No Content` on success, `404` if the ID does not exist. There is no confirmation step — double-check the ID before running this command.
+
+> **Tip:** if you are unsure, deactivate the user first (`"isActive": false`) to cut off their access while you confirm the decision. Delete once confirmed.
+
+---
+
+### View the role permission matrix
+
+To see the exact permissions granted to each role:
+
+```bash
+curl -s http://localhost:3000/admin/roles \
+  -H "Authorization: Bearer $TOKEN" \
+  | jq
+```
+
+```json
+{
+  "viewer": [
+    "pages:read", "blocks:read", "journals:read", "tags:read", "properties:read"
+  ],
+  "editor": [
+    "pages:read", "pages:write", "blocks:read", "blocks:write",
+    "journals:read", "journals:write", "tags:read", "properties:read", "query:execute"
+  ],
+  "admin": [
+    "pages:read", "pages:write", "blocks:read", "blocks:write",
+    "journals:read", "journals:write", "tags:read", "properties:read",
+    "query:execute", "admin:users", "admin:queue"
+  ]
+}
+```
+
+---
+
+### Monitor the write queue
+
+```bash
+curl -s http://localhost:3000/admin/queue \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```json
+{
+  "depth": 0,
+  "maxDepth": 50,
+  "timeoutMs": 30000
+}
+```
+
+- `depth` — number of write operations currently waiting to execute
+- `maxDepth` — threshold at which new writes are rejected with `503`
+- `timeoutMs` — maximum time a single write operation is allowed to run
+
+A non-zero `depth` that is not clearing indicates a write operation is hung. Check the gateway logs for timeout errors.
+
+---
+
+### Quick-reference cheat sheet
+
+```bash
+# Store token
+TOKEN=$(curl -s -X POST http://localhost:3000/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"<pw>"}' | jq -r '.accessToken')
+
+# List users (show id + username + role)
+curl -s http://localhost:3000/admin/users \
+  -H "Authorization: Bearer $TOKEN" \
+  | jq '.data[] | {id, username, role, isActive}'
+
+# Find a user's ID by username
+ID=$(curl -s http://localhost:3000/admin/users \
+  -H "Authorization: Bearer $TOKEN" \
+  | jq -r '.data[] | select(.username=="alice") | .id')
+
+# Create viewer
+curl -s -X POST http://localhost:3000/admin/users \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"username":"bob","password":"Pass1234!","role":"viewer"}'
+
+# Promote to editor
+curl -s -X PATCH http://localhost:3000/admin/users/$ID \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"role":"editor"}'
+
+# Reset password
+curl -s -X PATCH http://localhost:3000/admin/users/$ID \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"password":"NewPass1!"}'
+
+# Deactivate (reversible)
+curl -s -X PATCH http://localhost:3000/admin/users/$ID \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"isActive":false}'
+
+# Reactivate
+curl -s -X PATCH http://localhost:3000/admin/users/$ID \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"isActive":true}'
+
+# Delete (permanent)
+curl -s -X DELETE http://localhost:3000/admin/users/$ID \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+---
 
 ## Write queue
 
