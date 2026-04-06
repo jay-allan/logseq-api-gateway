@@ -130,6 +130,236 @@ const SHARED_SCHEMAS = [
                 description: 'Zero-based offset of the first returned item'
             }
         }
+    },
+    {
+        $id: 'LogseqPage',
+        type: 'object',
+        description: 'A Logseq page or journal entry',
+        required: ['id', 'uuid', 'name', 'originalName'],
+        additionalProperties: true,
+        properties: {
+            id: { type: 'integer', description: 'Internal Logseq page ID' },
+            uuid: { type: 'string', description: 'Page UUID' },
+            name: {
+                type: 'string',
+                description: 'Normalised page name (lower-case)'
+            },
+            originalName: {
+                type: 'string',
+                description: 'Page name as entered by the user'
+            },
+            properties: {
+                type: 'object',
+                additionalProperties: true,
+                description: 'Page-level properties'
+            },
+            journal: {
+                type: 'boolean',
+                description: 'True when this page is a journal entry'
+            },
+            journalDay: {
+                type: 'integer',
+                description: 'Journal date as YYYYMMDD integer'
+            },
+            createdAt: {
+                type: 'integer',
+                description: 'Creation timestamp (ms since epoch)'
+            },
+            updatedAt: {
+                type: 'integer',
+                description: 'Last-updated timestamp (ms since epoch)'
+            }
+        }
+    },
+    {
+        $id: 'LogseqBlock',
+        type: 'object',
+        description: 'A Logseq block',
+        required: ['uuid', 'content'],
+        additionalProperties: true,
+        properties: {
+            uuid: { type: 'string', description: 'Block UUID' },
+            content: {
+                type: 'string',
+                description: 'Raw block content (Markdown or Org)'
+            },
+            properties: {
+                type: 'object',
+                additionalProperties: true,
+                description: 'Block-level properties'
+            },
+            format: {
+                type: 'string',
+                enum: ['markdown', 'org'],
+                description: 'Block content format'
+            },
+            marker: {
+                type: 'string',
+                description: 'Task marker (TODO, DOING, DONE, etc.)'
+            },
+            priority: {
+                type: 'string',
+                description: 'Task priority (A, B, C)'
+            },
+            children: {
+                type: 'array',
+                description: 'Nested child blocks (present when includeChildren=true)'
+            }
+        }
+    },
+    {
+        $id: 'LogseqTag',
+        type: 'object',
+        description: 'A Logseq tag (class page)',
+        required: ['id', 'uuid', 'name', 'originalName'],
+        additionalProperties: true,
+        properties: {
+            id: { type: 'integer', description: 'Internal Logseq tag ID' },
+            uuid: { type: 'string', description: 'Tag UUID' },
+            name: { type: 'string', description: 'Normalised tag name' },
+            originalName: {
+                type: 'string',
+                description: 'Tag name as entered by the user'
+            }
+        }
+    },
+    {
+        $id: 'LogseqProperty',
+        type: 'object',
+        description: 'A Logseq property schema entry',
+        required: ['id', 'name'],
+        additionalProperties: true,
+        properties: {
+            id: {
+                type: 'integer',
+                description: 'Internal Logseq property ID'
+            },
+            name: { type: 'string', description: 'Property key name' },
+            schema: {
+                type: 'object',
+                additionalProperties: true,
+                description: 'Property schema definition'
+            }
+        }
+    },
+    {
+        $id: 'PageList',
+        type: 'object',
+        description: 'Paginated list of Logseq pages',
+        required: ['data', 'meta'],
+        properties: {
+            data: {
+                type: 'array',
+                items: { $ref: 'LogseqPage#' },
+                description: 'Page items for this page of results'
+            },
+            meta: { $ref: 'PaginationMeta#' }
+        }
+    },
+    {
+        $id: 'TagList',
+        type: 'object',
+        description: 'Paginated list of Logseq tags',
+        required: ['data', 'meta'],
+        properties: {
+            data: {
+                type: 'array',
+                items: { $ref: 'LogseqTag#' },
+                description: 'Tag items for this page of results'
+            },
+            meta: { $ref: 'PaginationMeta#' }
+        }
+    },
+    {
+        $id: 'PropertyList',
+        type: 'object',
+        description: 'Paginated list of Logseq property schemas',
+        required: ['data', 'meta'],
+        properties: {
+            data: {
+                type: 'array',
+                items: { $ref: 'LogseqProperty#' },
+                description: 'Property items for this page of results'
+            },
+            meta: { $ref: 'PaginationMeta#' }
+        }
+    },
+    {
+        $id: 'BlockTree',
+        type: 'object',
+        description: 'Block tree for a page (blocks may include nested children)',
+        required: ['data'],
+        properties: {
+            data: {
+                type: 'array',
+                items: { $ref: 'LogseqBlock#' },
+                description: 'Top-level blocks; each may have a children array'
+            }
+        }
+    },
+    {
+        $id: 'BlockList',
+        type: 'object',
+        description: 'Flat list of Logseq blocks',
+        required: ['data'],
+        properties: {
+            data: {
+                type: 'array',
+                items: { $ref: 'LogseqBlock#' },
+                description: 'Block items'
+            }
+        }
+    },
+    {
+        $id: 'BlockProperties',
+        type: 'object',
+        description: 'Key/value properties attached to a block',
+        required: ['properties'],
+        properties: {
+            properties: {
+                type: 'object',
+                additionalProperties: true,
+                description: 'Block property map'
+            }
+        }
+    },
+    {
+        $id: 'QueryResult',
+        type: 'object',
+        description: 'Raw Datalog query result from Logseq',
+        required: ['result'],
+        properties: {
+            result: {
+                description:
+                    'Raw query result — structure depends on the query ' +
+                    ':find clause. Each element corresponds to one result tuple.'
+            }
+        }
+    },
+    {
+        $id: 'PageReferenceList',
+        type: 'object',
+        description:
+            'Pages that contain references to the requested page, ' +
+            'together with the referencing blocks from each page',
+        required: ['data'],
+        properties: {
+            data: {
+                type: 'array',
+                description: 'Referencing pages with their blocks',
+                items: {
+                    type: 'object',
+                    additionalProperties: true,
+                    properties: {
+                        page: { $ref: 'LogseqPage#' },
+                        blocks: {
+                            type: 'array',
+                            items: { $ref: 'LogseqBlock#' }
+                        }
+                    }
+                }
+            }
+        }
     }
 ];
 

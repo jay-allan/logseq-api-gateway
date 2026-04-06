@@ -137,18 +137,13 @@ Refresh tokens are single-use and rotated on every call.
 | Manage users (`/admin/users`) | | | ✓ |
 | View queue status (`/admin/queue`) | | | ✓ |
 
-### Planned endpoints (Phase 2+)
+### Planned endpoints (Phase 4+)
 
-The following resource routes are planned but not yet implemented:
+The following are planned but not yet available:
 
-| Group | Endpoints |
-|---|---|
-| Pages | `GET/POST /pages`, `GET/PATCH/DELETE /pages/:name`, `GET /pages/:name/blocks`, `GET /pages/:name/links` |
-| Blocks | `GET/PATCH/DELETE /blocks/:uuid`, `POST /pages/:name/blocks`, `POST /blocks/:uuid/children` |
-| Journals | `GET/POST /journals`, `GET/POST /journals/:date` |
-| Tags | `GET /tags`, `GET /tags/:name/blocks` |
-| Properties | `GET /properties`, `GET /properties/:name` |
-| Query | `POST /query` (Datalog passthrough) |
+| Group | Endpoint | Notes |
+|---|---|---|
+| Blocks | `DELETE /blocks/:uuid` | Returns 501 — Logseq method name unconfirmed |
 
 ### Currently available endpoints
 
@@ -164,6 +159,30 @@ The following resource routes are planned but not yet implemented:
 | `DELETE` | `/admin/users/:id` | admin | Delete a user |
 | `GET` | `/admin/roles` | admin | View the role permission matrix |
 | `GET` | `/admin/queue` | admin | View write queue status |
+| `GET` | `/pages` | viewer+ | List all pages (paginated) |
+| `GET` | `/pages/:name` | viewer+ | Get a page by name |
+| `GET` | `/pages/:name/blocks` | viewer+ | Get page block tree |
+| `GET` | `/pages/:name/links` | viewer+ | Get pages that reference this page |
+| `GET` | `/blocks/:uuid` | viewer+ | Get a block (`?children=true` for tree) |
+| `GET` | `/blocks/:uuid/properties` | viewer+ | Get block properties |
+| `GET` | `/journals` | viewer+ | List all journal pages (paginated, newest first) |
+| `GET` | `/journals/:date` | viewer+ | Get journal page for a date (YYYY-MM-DD) |
+| `GET` | `/tags` | viewer+ | List all tags (paginated) |
+| `GET` | `/tags/:name/blocks` | viewer+ | Get blocks carrying a tag |
+| `GET` | `/properties` | viewer+ | List all property schemas (paginated) |
+| `POST` | `/pages` | editor+ | Create a page |
+| `PATCH` | `/pages/:name` | editor+ | Rename a page |
+| `DELETE` | `/pages/:name` | editor+ | Delete a page |
+| `POST` | `/pages/:name/blocks` | editor+ | Append a block to a page |
+| `POST` | `/blocks/:uuid/children` | editor+ | Insert a child block |
+| `POST` | `/blocks/:uuid/siblings` | editor+ | Insert a sibling block |
+| `POST` | `/blocks/:uuid/batch` | editor+ | Batch insert blocks |
+| `PATCH` | `/blocks/:uuid` | editor+ | Update block content |
+| `PATCH` | `/blocks/:uuid/properties` | editor+ | Upsert a block property |
+| `DELETE` | `/blocks/:uuid/properties/:key` | editor+ | Remove a block property |
+| `POST` | `/blocks/:uuid/move` | editor+ | Move a block |
+| `POST` | `/journals/:date` | editor+ | Create journal page (YYYY-MM-DD) |
+| `POST` | `/query` | editor+ | Execute a Datalog query |
 | `GET` | `/docs` | None | Swagger UI |
 | `GET` | `/openapi.json` | None | Raw OpenAPI 3.1 spec |
 

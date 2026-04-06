@@ -10,6 +10,12 @@ import { errorHandlerPlugin } from './plugins/error-handler';
 import healthRoute from './routes/health';
 import authRoute from './routes/auth';
 import adminRoutes from './routes/admin';
+import pagesRoute from './routes/pages';
+import blocksRoute from './routes/blocks';
+import journalsRoute from './routes/journals';
+import tagsRoute from './routes/tags';
+import propertiesRoute from './routes/properties';
+import queryRoute from './routes/query';
 
 import { config } from './config';
 
@@ -43,6 +49,12 @@ export async function buildApp(
     await app.register(healthRoute, { logseqConnect: opts.logseqConnect ?? true });
     await app.register(authRoute, { prefix: '/auth' });
     await app.register(adminRoutes, { prefix: '/admin' });
+    await app.register(pagesRoute, { prefix: '/pages' });
+    await app.register(blocksRoute, { prefix: '/blocks' });
+    await app.register(journalsRoute, { prefix: '/journals' });
+    await app.register(tagsRoute, { prefix: '/tags' });
+    await app.register(propertiesRoute, { prefix: '/properties' });
+    await app.register(queryRoute, { prefix: '/query' });
 
     return app;
 }

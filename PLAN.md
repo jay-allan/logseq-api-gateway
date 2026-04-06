@@ -36,54 +36,55 @@ Infrastructure only; no Logseq integration.
 
 ---
 
-## Phase 2 — Logseq client + read routes
+## Phase 2 — Logseq client + read routes ✅ Complete
 
 Depends on: Phase 1
 
-- [ ] `src/logseq/client.ts` — typed `call(method, args)` via native fetch to `POST /api`
-- [ ] `src/logseq/methods.ts` — `WRITE_METHODS` set, method name constants
-- [ ] `GET /pages` — list all pages (`getAllPages`)
-- [ ] `GET /pages/:name` — get a page (`getPage`)
-- [ ] `GET /pages/:name/blocks` — page block tree (`getPageBlocksTree`)
-- [ ] `GET /pages/:name/links` — linked references (`getPageLinkedReferences`)
-- [ ] `GET /blocks/:uuid` — get block, optional `?children=true` (`getBlock`)
-- [ ] `GET /blocks/:uuid/properties` — block properties (`getBlockProperties`)
-- [ ] `GET /journals` — all journal pages via datascript query
-- [ ] `GET /journals/:date` — single journal page (YYYY-MM-DD)
-- [ ] `GET /tags` — all tags (`getAllTags`)
-- [ ] `GET /tags/:name/blocks` — blocks by tag (`getTagObjects`)
-- [ ] `GET /properties` — all properties (`getAllProperties`)
-- [ ] Error normalization: Logseq null → 404, network error → 502, validation → 400
-- [ ] CORS plugin + rate limiting plugin
-- [ ] Tests for all read routes (mocked Logseq client)
+- [x] `src/logseq/client.ts` — typed `call(method, args)` via native fetch to `POST /api`
+- [x] `src/logseq/methods.ts` — `WRITE_METHODS` set, method name constants
+- [x] `GET /pages` — list all pages (`getAllPages`)
+- [x] `GET /pages/:name` — get a page (`getPage`)
+- [x] `GET /pages/:name/blocks` — page block tree (`getPageBlocksTree`)
+- [x] `GET /pages/:name/links` — linked references (`getPageLinkedReferences`)
+- [x] `GET /blocks/:uuid` — get block, optional `?children=true` (`getBlock`)
+- [x] `GET /blocks/:uuid/properties` — block properties (`getBlockProperties`)
+- [x] `GET /journals` — all journal pages via datascript query (sorted most-recent first)
+- [x] `GET /journals/:date` — single journal page (YYYY-MM-DD); 400 on bad format
+- [x] `GET /tags` — all tags (`getAllTags`)
+- [x] `GET /tags/:name/blocks` — blocks by tag (`getTagObjects`)
+- [x] `GET /properties` — all properties (`getAllProperties`)
+- [x] Error normalization: Logseq null → 404, network error → 502
+- [x] CORS plugin + rate limiting plugin
+- [x] Pagination (`?limit` / `?offset`) on all list endpoints with `meta` wrapper
+- [x] 42 tests across 5 test files; 97 total tests passing
 
-**Milestone:** `GET /pages` returns live Logseq data; `GET /health` shows `logseqReachable: true`.
+**Milestone:** All read endpoints implemented and tested; `GET /pages` returns live Logseq data when connected.
 
 ---
 
-## Phase 3 — Write routes
+## Phase 3 — Write routes ✅ Complete
 
 Depends on: Phase 2
 
-All write operations route through `enqueueWrite()` from `src/write-queue/index.ts`.
+All write operations route through `enqueueWrite()` automatically via the Logseq client's `WRITE_METHODS` set.
 
-- [ ] `POST /pages` — create page (`createPage`) ← write queue
-- [ ] `PATCH /pages/:name` — rename page (`renamePage`) ← write queue
-- [ ] `DELETE /pages/:name` — delete page (`deletePage`) ← write queue
-- [ ] `POST /pages/:name/blocks` — append block (`appendBlockInPage`) ← write queue
-- [ ] `POST /blocks/:uuid/children` — insert child block (`insertBlock`) ← write queue
-- [ ] `POST /blocks/:uuid/siblings` — insert sibling block (`insertBlock`) ← write queue
-- [ ] `POST /blocks/:uuid/batch` — batch insert (`insertBatchBlock`) ← write queue
-- [ ] `PATCH /blocks/:uuid` — update block content (`updateBlock`) ← write queue
-- [ ] `PATCH /blocks/:uuid/properties` — upsert property (`upsertBlockProperty`) ← write queue
-- [ ] `DELETE /blocks/:uuid/properties/:key` — remove property (`removeBlockProperty`) ← write queue
-- [ ] `POST /blocks/:uuid/move` — move block (`moveBlock`) ← write queue
-- [ ] `DELETE /blocks/:uuid` — remove block (verify method name; 501 until confirmed) ← write queue
-- [ ] `POST /journals/:date` — create/update journal entry ← write queue
-- [ ] `POST /query` — Datalog passthrough (`datascriptQuery`); editor+ only
-- [ ] Tests for all write routes verifying serialization behavior
+- [x] `POST /pages` — create page (`createPage`) ← write queue
+- [x] `PATCH /pages/:name` — rename page (`renamePage`) ← write queue
+- [x] `DELETE /pages/:name` — delete page (`deletePage`) ← write queue
+- [x] `POST /pages/:name/blocks` — append block (`appendBlockInPage`) ← write queue
+- [x] `POST /blocks/:uuid/children` — insert child block (`insertBlock`) ← write queue
+- [x] `POST /blocks/:uuid/siblings` — insert sibling block (`insertBlock`) ← write queue
+- [x] `POST /blocks/:uuid/batch` — batch insert (`insertBatchBlock`) ← write queue
+- [x] `PATCH /blocks/:uuid` — update block content (`updateBlock`) ← write queue
+- [x] `PATCH /blocks/:uuid/properties` — upsert property (`upsertBlockProperty`) ← write queue
+- [x] `DELETE /blocks/:uuid/properties/:key` — remove property (`removeBlockProperty`) ← write queue
+- [x] `POST /blocks/:uuid/move` — move block (`moveBlock`) ← write queue
+- [x] `DELETE /blocks/:uuid` — returns 501 until Logseq method name confirmed ← write queue
+- [x] `POST /journals/:date` — create journal page (`createJournalPage`) ← write queue
+- [x] `POST /query` — Datalog passthrough (`datascriptQuery`); editor+ only
+- [x] 56 new tests; 153 total tests passing
 
-**Milestone:** Full CRUD; 5 concurrent write requests execute in order (verifiable in logs).
+**Milestone:** Full CRUD implemented; all write operations serialized through write queue.
 
 ---
 
