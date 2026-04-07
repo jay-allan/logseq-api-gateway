@@ -10,6 +10,7 @@ import {
 import { hashPassword } from '../../auth/password';
 import { deleteAllUserTokens } from '../../db/repositories/refresh-token.repository';
 import { requirePermission } from '../../auth/rbac';
+import { sanitizeForLog } from '../../utils/log';
 import type { Role } from '../../types/api';
 
 const AUTHENTICATE = { onRequest: [] as unknown[] };
@@ -104,6 +105,15 @@ export default async function usersRoute(
             try {
                 const passwordHash = await hashPassword(password);
                 const user = createUser({ username, email, passwordHash, role });
+                request.log.info(
+                    {
+                        event: 'admin_user_created',
+                        actorId: request.user.sub,
+                        newUserId: user.id,
+                        role
+                    },
+                    '[security] Admin created user'
+                );
                 return reply.code(201).send(user);
             } catch (err) {
                 const msg = (err as Error).message ?? '';
@@ -111,7 +121,7 @@ export default async function usersRoute(
                     return reply.code(409).send({
                         error: {
                             code: 'CONFLICT',
-                            message: `Username '${username}' is already taken`
+                            message: `Username '${sanitizeForLog(username)}' is already taken`
                         }
                     });
                 }
@@ -261,6 +271,20 @@ export default async function usersRoute(
                 isActive: body.isActive
             });
 
+            const changes: Record<string, unknown> = {};
+            if (body.role !== undefined) changes.role = body.role;
+            if (body.isActive !== undefined) changes.isActive = body.isActive;
+            if (body.password !== undefined) changes.passwordReset = true;
+            request.log.info(
+                {
+                    event: 'admin_user_updated',
+                    actorId: request.user.sub,
+                    targetId: id,
+                    changes
+                },
+                '[security] Admin updated user'
+            );
+
             return reply.code(200).send(updated);
         }
     );
@@ -316,6 +340,14 @@ export default async function usersRoute(
 
             deleteAllUserTokens(id);
             deleteUser(id);
+            request.log.info(
+                {
+                    event: 'admin_user_deleted',
+                    actorId: request.user.sub,
+                    targetId: id
+                },
+                '[security] Admin deleted user'
+            );
             return reply.code(204).send();
         }
     );

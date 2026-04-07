@@ -115,6 +115,16 @@ describe('Query route', () => {
             expect(res.statusCode).toBe(400);
         });
 
+        it('returns 400 when query exceeds 4096 characters', async () => {
+            const res = await app.inject({
+                method: 'POST',
+                url: '/query',
+                headers: { Authorization: `Bearer ${editorToken}` },
+                payload: { query: ':find '.padEnd(4097, '?') }
+            });
+            expect(res.statusCode).toBe(400);
+        });
+
         it('returns 502 when Logseq is unreachable', async () => {
             callLogseq.mockRejectedValueOnce(
                 Object.assign(new Error('Logseq unreachable'), {

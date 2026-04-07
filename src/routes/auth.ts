@@ -15,6 +15,7 @@ import {
     buildJwtPayload
 } from '../auth/jwt';
 import { findUserById } from '../db/repositories/user.repository';
+import { sanitizeForLog } from '../utils/log';
 
 export default async function authRoute(app: FastifyInstance): Promise<void> {
     /**
@@ -88,6 +89,15 @@ export default async function authRoute(app: FastifyInstance): Promise<void> {
                 // response time is indistinguishable from a wrong-password
                 // attempt, preventing username enumeration via timing.
                 await verifyPassword(password, await getSentinelHash());
+                request.log.warn(
+                    {
+                        event: 'login_failed',
+                        reason: 'unknown_user',
+                        username: sanitizeForLog(username),
+                        ip: request.ip
+                    },
+                    '[security] Login failed — unknown username'
+                );
                 return reply.code(401).send({
                     error: { code: 'UNAUTHORIZED', message: 'Invalid credentials' }
                 });
@@ -95,6 +105,15 @@ export default async function authRoute(app: FastifyInstance): Promise<void> {
 
             const valid = await verifyPassword(password, user.passwordHash);
             if (!valid) {
+                request.log.warn(
+                    {
+                        event: 'login_failed',
+                        reason: 'wrong_password',
+                        userId: user.id,
+                        ip: request.ip
+                    },
+                    '[security] Login failed — wrong password'
+                );
                 return reply.code(401).send({
                     error: { code: 'UNAUTHORIZED', message: 'Invalid credentials' }
                 });
@@ -108,6 +127,11 @@ export default async function authRoute(app: FastifyInstance): Promise<void> {
                 tokenHash: hashRefreshToken(rawRefresh),
                 expiresAt: refreshTokenExpiry()
             });
+
+            request.log.info(
+                { event: 'login_success', userId: user.id, ip: request.ip },
+                '[security] Login successful'
+            );
 
             return reply.code(200).send({
                 accessToken,
@@ -166,6 +190,10 @@ export default async function authRoute(app: FastifyInstance): Promise<void> {
             const storedToken = findRefreshToken(tokenHash);
 
             if (!storedToken) {
+                request.log.warn(
+                    { event: 'token_refresh_failed', reason: 'invalid_token', ip: request.ip },
+                    '[security] Token refresh failed — invalid or expired token'
+                );
                 return reply.code(401).send({
                     error: {
                         code: 'UNAUTHORIZED',
@@ -176,6 +204,15 @@ export default async function authRoute(app: FastifyInstance): Promise<void> {
 
             const user = findUserById(storedToken.userId);
             if (!user || !user.isActive) {
+                request.log.warn(
+                    {
+                        event: 'token_refresh_failed',
+                        reason: 'account_inactive',
+                        userId: storedToken.userId,
+                        ip: request.ip
+                    },
+                    '[security] Token refresh failed — account not found or inactive'
+                );
                 return reply.code(401).send({
                     error: { code: 'UNAUTHORIZED', message: 'Account not found or inactive' }
                 });
@@ -192,6 +229,11 @@ export default async function authRoute(app: FastifyInstance): Promise<void> {
                 tokenHash: hashRefreshToken(rawRefresh),
                 expiresAt: refreshTokenExpiry()
             });
+
+            request.log.info(
+                { event: 'token_refresh_success', userId: user.id, ip: request.ip },
+                '[security] Token refreshed'
+            );
 
             return reply.code(200).send({
                 accessToken,

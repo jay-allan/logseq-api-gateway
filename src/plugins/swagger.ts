@@ -470,10 +470,15 @@ async function swaggerPlugin(app: FastifyInstance): Promise<void> {
         }
     });
 
-    await app.register(fastifySwaggerUi, {
-        routePrefix: '/docs',
-        uiConfig: { docExpansion: 'list', deepLinking: true }
-    });
+    // Swagger UI can be disabled at runtime (e.g. in production) by setting
+    // SWAGGER_ENABLED=false. Read from process.env so tests can override.
+    const swaggerEnabled = process.env.SWAGGER_ENABLED !== 'false';
+    if (swaggerEnabled) {
+        await app.register(fastifySwaggerUi, {
+            routePrefix: '/docs',
+            uiConfig: { docExpansion: 'list', deepLinking: true }
+        });
+    }
 }
 
 export default fp(swaggerPlugin);

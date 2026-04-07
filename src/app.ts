@@ -6,6 +6,7 @@ import authPlugin from './plugins/auth';
 import corsPlugin from './plugins/cors';
 import rateLimitPlugin from './plugins/rate-limit';
 import requestIdPlugin from './plugins/request-id';
+import securityHeadersPlugin from './plugins/security-headers';
 import swaggerPlugin from './plugins/swagger';
 import { errorHandlerPlugin } from './plugins/error-handler';
 
@@ -48,6 +49,7 @@ export async function buildApp(
     await app.register(rateLimitPlugin);
     await app.register(authPlugin);
     await app.register(requestIdPlugin);
+    await app.register(securityHeadersPlugin);
     await errorHandlerPlugin(app);
 
     // Routes

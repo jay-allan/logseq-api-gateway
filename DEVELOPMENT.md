@@ -266,6 +266,8 @@ npm run lint:openapi       # generate + rmoa quality check
 
 ## Key gotchas
 
+**JWT_SECRET minimum length:** Both `JWT_SECRET` and `JWT_REFRESH_SECRET` must be at least 32 characters (256 bits) per NIST SP 800-185 for HMAC-SHA256 keys. The test setup already satisfies this. Generate a secret with `openssl rand -base64 48`.
+
 **bcrypt rounds in tests:** `src/auth/password.ts` uses 4 rounds when `NODE_ENV=test` and 12 in production. Without this, every test that creates a user takes ~200ms and suites time out.
 
 **Schema `$ref` registration order:** Shared schemas must be registered with `app.addSchema()` before the `@fastify/swagger` plugin is registered. The swagger plugin collects schemas at registration time.
@@ -283,3 +285,15 @@ npm run lint:openapi       # generate + rmoa quality check
 **X-Request-Id:** Set `requestIdHeader: 'x-request-id'` and `genReqId: () => uuidv4()` in the Fastify constructor (`src/app.ts`). The `requestIdPlugin` (`src/plugins/request-id.ts`) echoes it back as a response header. Fastify's Pino logger includes `reqId` in HTTP-level log lines automatically; manual `Logger.*` calls do not carry the ID.
 
 **Token cleanup interval:** `setInterval` in `index.ts` runs `deleteExpiredTokens()` every hour. It is `unref()`-ed so it does not prevent process exit if the server is stopped manually without a signal. It is cleared explicitly in the shutdown handler.
+
+## Datalog query security scope
+
+`POST /query` passes a raw Datalog string to Logseq's `datascriptQuery` API. Risk assessment:
+
+- **Read-only:** Datalog is a declarative query language. Logseq's datascript engine does not expose mutation operations through this API, so queries cannot modify graph data.
+- **Single-graph scope:** Datascript queries run against the currently open graph only. They cannot access other graphs or the filesystem.
+- **No side effects observed:** No known mechanism for queries to trigger network calls, file I/O, or arbitrary code execution through the datascript interface.
+- **Length limit:** Query strings are limited to 4096 characters (enforced in JSON schema) to prevent resource exhaustion from pathologically complex queries.
+- **Auth gate:** Requires `editor` role or above (`query:execute` permission). Viewer-only accounts cannot execute queries.
+
+The primary residual risk is information disclosure: a sufficiently privileged user can read any data in the open graph. This is expected behaviour — treat `query:execute` as a high-privilege permission.

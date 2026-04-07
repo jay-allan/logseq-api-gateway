@@ -32,9 +32,11 @@ export default async function queryRoute(
                     properties: {
                         query: {
                             type: 'string',
+                            maxLength: 4096,
                             description:
                                 'Datalog query string ' +
-                                '(e.g. `[:find ?name :where [?b :block/name ?name]]`)'
+                                '(e.g. `[:find ?name :where [?b :block/name ?name]]`). ' +
+                                'Maximum length: 4096 characters.'
                         },
                         inputs: {
                             type: 'array',

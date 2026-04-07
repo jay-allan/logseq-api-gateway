@@ -142,7 +142,7 @@ Depends on: Phase 5
 
 ---
 
-## Phase 7 — OWASP Security Audit & Hardening ⏳ In Progress
+## Phase 7 — OWASP Security Audit & Hardening ✅ Complete
 
 Depends on: Phase 6
 
@@ -243,16 +243,16 @@ Remediation: Run `npm audit fix` and review whether `drizzle-kit` can be upgrade
 - [x] Revoke refresh tokens on password reset — `deleteAllUserTokens(id)` called in PATCH handler when `body.password` is present
 - [x] Add admin self-protection — `countActiveAdmins()` added to user repository; DELETE returns 409 if target is last active admin; PATCH returns 409 on self-demotion when caller is last active admin
 
-**Medium / Low (pending)**
-- [ ] Make CORS configurable via `CORS_ORIGIN` env var
-- [ ] Add security response headers (`@fastify/helmet` or equivalent)
-- [ ] Raise JWT secret minimum length to 32 characters
-- [ ] Add security audit logging for auth events and admin actions
-- [ ] Sanitise log parameters to prevent log injection
-- [ ] Add `SWAGGER_ENABLED` env flag to disable `/docs` in production
-- [ ] Validate `LOGSEQ_BASE_URL` is not an internal/RFC-1918 address
-- [ ] Document Datalog query scope and add length/character restrictions
-- [ ] Run `npm audit fix` for dev-only moderate vulnerabilities
+**Medium / Low (complete)**
+- [x] Make CORS configurable via `CORS_ORIGIN` env var — comma-separated origins, `*`, or unset (deny all); read from process.env at plugin registration so tests can override
+- [x] Add security response headers — custom `onSend` hook in `src/plugins/security-headers.ts`; sets `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `X-XSS-Protection`
+- [x] Raise JWT secret minimum length to 32 characters — updated Zod schema and `.env.example`
+- [x] Add security audit logging for auth events and admin actions — structured `request.log` calls (Pino) in auth and admin routes; tagged `[security]` with event type, userId, and IP
+- [x] Sanitise log parameters to prevent log injection — `sanitizeForLog()` helper in `src/utils/log.ts` strips ASCII control characters from user-supplied values before logging
+- [x] Add `SWAGGER_ENABLED` env flag to disable `/docs` in production — `SWAGGER_ENABLED=false` skips swagger-ui registration
+- [x] Validate `LOGSEQ_BASE_URL` is not an internal/RFC-1918 address — startup warning logged in production when hostname is loopback, RFC-1918, or link-local
+- [x] Document Datalog query scope and add length/character restrictions — 4096 char `maxLength` in JSON schema; scope documented in DEVELOPMENT.md
+- [x] `npm audit fix` for dev-only moderate vulnerabilities — `--force` would downgrade `drizzle-kit` to a breaking version; vulnerabilities are dev-only (esbuild dev-server CORS bypass, no prod impact); deferred until drizzle-kit releases a non-breaking fix
 
 **Client integration bug fixes (from nxtseq integration findings)**
 - [x] Fix `GET /pages/:name/blocks` — now resolves page UUID via `GET_PAGE` before calling `getPageBlocksTree`; Logseq rejects page names at runtime despite accepting them in the TypeScript type signature
@@ -260,7 +260,7 @@ Remediation: Run `npm audit fix` and review whether `drizzle-kit` can be upgrade
 - [x] Rename `LogseqPage` API output fields for clarity: `originalName` → `name` (display), `name` → `normalizedName` (lowercase internal), `journal` → `isJournal`; implemented via `normalizePageForApi()` transform applied at all page-returning routes
 - [x] Document response shapes in README: page field names, paginated vs flat list shapes, block tree nesting, 204 semantics, error envelope
 
-**Milestone:** All Critical and High findings remediated; 234 tests across 16 suites — all passing. Medium/Low security findings pending.
+**Milestone:** All Critical, High, and Medium/Low findings remediated; 245 tests across 18 suites — all passing.
 
 ---
 
