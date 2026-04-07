@@ -254,7 +254,13 @@ Remediation: Run `npm audit fix` and review whether `drizzle-kit` can be upgrade
 - [ ] Document Datalog query scope and add length/character restrictions
 - [ ] Run `npm audit fix` for dev-only moderate vulnerabilities
 
-**Milestone:** All Critical and High findings remediated; 228 tests across 16 suites — all passing. Medium/Low findings pending.
+**Client integration bug fixes (from nxtseq integration findings)**
+- [x] Fix `GET /pages/:name/blocks` — now resolves page UUID via `GET_PAGE` before calling `getPageBlocksTree`; Logseq rejects page names at runtime despite accepting them in the TypeScript type signature
+- [x] Fix `GET /pages/:name/links` — same UUID resolution fix for `getPageLinkedReferences`; also added 404 response to OpenAPI schema
+- [x] Rename `LogseqPage` API output fields for clarity: `originalName` → `name` (display), `name` → `normalizedName` (lowercase internal), `journal` → `isJournal`; implemented via `normalizePageForApi()` transform applied at all page-returning routes
+- [x] Document response shapes in README: page field names, paginated vs flat list shapes, block tree nesting, 204 semantics, error envelope
+
+**Milestone:** All Critical and High findings remediated; 234 tests across 16 suites — all passing. Medium/Low security findings pending.
 
 ---
 

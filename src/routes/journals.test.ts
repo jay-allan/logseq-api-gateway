@@ -67,10 +67,12 @@ describe('Journals routes', () => {
 
             expect(res.statusCode).toBe(200);
             const [page] = JSON.parse(res.body).data;
-            expect(page.originalName).toBe('Jan 5th, 2024');
-            expect(page.journal).toBe(true);
+            expect(page.name).toBe('Jan 5th, 2024');          // was originalName
+            expect(page.normalizedName).toBe('jan 5th, 2024'); // was name
+            expect(page.isJournal).toBe(true);                 // was journal
             expect(page.journalDay).toBe(20240105);
             expect(page['original-name']).toBeUndefined();
+            expect(page.originalName).toBeUndefined();
         });
 
         it('returns 200 with paginated journal pages', async () => {
@@ -156,12 +158,14 @@ describe('Journals routes', () => {
 
             expect(res.statusCode).toBe(200);
             const body = JSON.parse(res.body);
-            expect(body.originalName).toBe('Jan 5th, 2024');
-            expect(body.journal).toBe(true);
+            expect(body.name).toBe('Jan 5th, 2024');          // was originalName
+            expect(body.normalizedName).toBe('jan 5th, 2024'); // was name
+            expect(body.isJournal).toBe(true);                 // was journal
             expect(body.journalDay).toBe(20240105);
             expect(body.createdAt).toBe(1704412800000);
             expect(body['original-name']).toBeUndefined();
             expect(body['journal?']).toBeUndefined();
+            expect(body.originalName).toBeUndefined();
         });
 
         it('returns 200 with the journal page', async () => {

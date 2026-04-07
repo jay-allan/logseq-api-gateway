@@ -200,6 +200,97 @@ Refresh tokens are single-use and rotated on every call.
 | `GET` | `/docs` | None | Swagger UI |
 | `GET` | `/openapi.json` | None | Raw OpenAPI 3.1 spec |
 
+## Response shapes
+
+### LogseqPage fields
+
+Every endpoint that returns a page uses these field names:
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | integer | Internal Logseq page ID |
+| `uuid` | string | Page UUID |
+| `name` | string | Display name as entered by the user (original casing) |
+| `normalizedName` | string | Lower-case normalized name (Logseq's internal identifier) |
+| `properties` | object | Page-level properties |
+| `isJournal` | boolean | `true` when this is a daily journal page |
+| `journalDay` | integer | Journal date as `YYYYMMDD` (only present on journal pages) |
+| `createdAt` | integer | Creation timestamp (ms since Unix epoch) |
+| `updatedAt` | integer | Last-updated timestamp (ms since Unix epoch) |
+
+> **Note:** `name` is the display name (`"My Project"`) and `normalizedName` is the lowercase form Logseq uses as its internal identifier (`"my project"`). Most clients should use `name`.
+
+### Paginated list endpoints
+
+`GET /pages`, `GET /journals`, `GET /tags`, and `GET /properties` return a paginated envelope:
+
+```json
+{
+  "data": [ /* items */ ],
+  "meta": { "total": 42, "limit": 50, "offset": 0 }
+}
+```
+
+Control pagination with `?limit=N&offset=N` (limit 1–100, default 50).
+
+### `GET /pages/:name/blocks`
+
+Returns the **full block tree** for the page. Blocks are nested — each block can have a `children` array of sub-blocks, and nesting depth is unbounded.
+
+```json
+{
+  "data": [
+    {
+      "uuid": "aaaa-...",
+      "content": "Top-level block",
+      "properties": {},
+      "format": "markdown",
+      "children": [
+        { "uuid": "bbbb-...", "content": "Child block", "properties": {}, "format": "markdown" }
+      ]
+    }
+  ]
+}
+```
+
+### `GET /pages/:name/links`
+
+Returns all pages that contain block references to the named page, grouped by source page:
+
+```json
+{
+  "data": [
+    {
+      "page": { "uuid": "...", "name": "Other Page", "normalizedName": "other page", ... },
+      "blocks": [
+        { "uuid": "cccc-...", "content": "See [[My Page]] for details", ... }
+      ]
+    }
+  ]
+}
+```
+
+### `PATCH /blocks/:uuid`
+
+Returns **204 No Content** with no response body. To confirm the saved state, issue a follow-up `GET /blocks/:uuid`.
+
+### Error responses
+
+All errors use the same envelope:
+
+```json
+{
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Page 'my-page' not found"
+  }
+}
+```
+
+Common codes: `NOT_FOUND`, `CONFLICT`, `UNAUTHORIZED`, `FORBIDDEN`, `BAD_GATEWAY`, `INTERNAL_SERVER_ERROR`.
+
+---
+
 ## Administering users
 
 There is no web interface. All user management is done through the REST API. This section is a complete operational guide for managing users, roles, and access using `curl`.

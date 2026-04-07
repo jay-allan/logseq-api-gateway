@@ -3,7 +3,7 @@ import { callLogseq } from '../logseq/client';
 import { Methods } from '../logseq/methods';
 import { requirePermission } from '../auth/rbac';
 import type { LogseqPage, LogseqBlock } from '../types/logseq';
-import { paginate, paginationQuerySchema } from './utils';
+import { normalizePageForApi, paginate, paginationQuerySchema } from './utils';
 
 export default async function pagesRoute(
     app: FastifyInstance
@@ -58,7 +58,10 @@ export default async function pagesRoute(
                 Methods.GET_ALL_PAGES
             );
 
-            return reply.code(200).send(paginate(pages ?? [], limit, offset));
+            const normalized = (pages ?? []).map(
+                (p) => normalizePageForApi(p as unknown as Record<string, unknown>)
+            );
+            return reply.code(200).send(paginate(normalized, limit, offset));
         }
     );
 
@@ -129,7 +132,9 @@ export default async function pagesRoute(
                 });
             }
 
-            return reply.code(200).send(page);
+            return reply.code(200).send(
+                normalizePageForApi(page as unknown as Record<string, unknown>)
+            );
         }
     );
 
@@ -187,9 +192,21 @@ export default async function pagesRoute(
         async (request, reply) => {
             const { name } = request.params as { name: string };
 
+            // getPageBlocksTree validates its argument as a UUID at runtime,
+            // so we must resolve the page UUID before calling it.
+            const page = await callLogseq<LogseqPage | null>(
+                Methods.GET_PAGE,
+                [name]
+            );
+            if (!page) {
+                return reply.code(404).send({
+                    error: { code: 'NOT_FOUND', message: `Page '${name}' not found` }
+                });
+            }
+
             const blocks = await callLogseq<LogseqBlock[] | null>(
                 Methods.GET_PAGE_BLOCKS_TREE,
-                [name]
+                [page.uuid]
             );
 
             if (!blocks) {
@@ -238,6 +255,10 @@ export default async function pagesRoute(
                         description: 'Insufficient permissions',
                         $ref: 'ErrorResponse#'
                     },
+                    404: {
+                        description: 'Page not found',
+                        $ref: 'ErrorResponse#'
+                    },
                     502: {
                         description: 'Logseq instance is unreachable',
                         $ref: 'ErrorResponse#'
@@ -252,13 +273,26 @@ export default async function pagesRoute(
         async (request, reply) => {
             const { name } = request.params as { name: string };
 
+            // getPageLinkedReferences also requires a UUID, not a page name.
+            const page = await callLogseq<LogseqPage | null>(
+                Methods.GET_PAGE,
+                [name]
+            );
+            if (!page) {
+                return reply.code(404).send({
+                    error: { code: 'NOT_FOUND', message: `Page '${name}' not found` }
+                });
+            }
+
             // Logseq returns [[sourcePage, [block, ...]], ...] or null
             const raw = await callLogseq<
                 [LogseqPage, LogseqBlock[]][] | null
-            >(Methods.GET_PAGE_LINKED_REFERENCES, [name]);
+            >(Methods.GET_PAGE_LINKED_REFERENCES, [page.uuid]);
 
-            const data = (raw ?? []).map(([page, blocks]) => ({
-                page,
+            const data = (raw ?? []).map(([sourcePage, blocks]) => ({
+                page: normalizePageForApi(
+                    sourcePage as unknown as Record<string, unknown>
+                ),
                 blocks: blocks ?? []
             }));
 
@@ -358,7 +392,9 @@ export default async function pagesRoute(
                 });
             }
 
-            return reply.code(201).send(page);
+            return reply.code(201).send(
+                normalizePageForApi(page as unknown as Record<string, unknown>)
+            );
         }
     );
 

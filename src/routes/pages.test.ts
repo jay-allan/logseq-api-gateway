@@ -152,7 +152,10 @@ describe('Pages routes', () => {
 
     describe('GET /pages/:name/blocks', () => {
         it('returns 200 with block tree', async () => {
-            callLogseq.mockResolvedValueOnce([MOCK_BLOCK]);
+            // Route resolves page UUID first, then fetches blocks by UUID
+            callLogseq
+                .mockResolvedValueOnce(MOCK_PAGE)    // GET_PAGE
+                .mockResolvedValueOnce([MOCK_BLOCK]); // GET_PAGE_BLOCKS_TREE
 
             const res = await app.inject({
                 method: 'GET',
@@ -166,12 +169,45 @@ describe('Pages routes', () => {
             expect(body.data[0].uuid).toBe(MOCK_BLOCK.uuid);
         });
 
-        it('returns 404 when page does not exist', async () => {
-            callLogseq.mockResolvedValueOnce(null);
+        it('calls getPageBlocksTree with the resolved UUID, not the page name', async () => {
+            callLogseq
+                .mockResolvedValueOnce(MOCK_PAGE)
+                .mockResolvedValueOnce([MOCK_BLOCK]);
+
+            await app.inject({
+                method: 'GET',
+                url: '/pages/test%20page/blocks',
+                headers: { Authorization: `Bearer ${viewerToken}` }
+            });
+
+            expect(callLogseq).toHaveBeenNthCalledWith(
+                1, 'logseq.Editor.getPage', ['test page']
+            );
+            expect(callLogseq).toHaveBeenNthCalledWith(
+                2, 'logseq.Editor.getPageBlocksTree', [MOCK_PAGE.uuid]
+            );
+        });
+
+        it('returns 404 when GET_PAGE returns null', async () => {
+            callLogseq.mockResolvedValueOnce(null); // GET_PAGE returns null
 
             const res = await app.inject({
                 method: 'GET',
                 url: '/pages/nonexistent/blocks',
+                headers: { Authorization: `Bearer ${viewerToken}` }
+            });
+
+            expect(res.statusCode).toBe(404);
+        });
+
+        it('returns 404 when GET_PAGE_BLOCKS_TREE returns null', async () => {
+            callLogseq
+                .mockResolvedValueOnce(MOCK_PAGE)  // GET_PAGE succeeds
+                .mockResolvedValueOnce(null);       // but blocks tree fails
+
+            const res = await app.inject({
+                method: 'GET',
+                url: '/pages/test%20page/blocks',
                 headers: { Authorization: `Bearer ${viewerToken}` }
             });
 
@@ -183,10 +219,10 @@ describe('Pages routes', () => {
 
     describe('GET /pages/:name/links', () => {
         it('returns 200 with reference list', async () => {
-            // Logseq returns [[sourcePage, [block, ...]], ...]
-            callLogseq.mockResolvedValueOnce([
-                [MOCK_PAGE, [MOCK_BLOCK]]
-            ]);
+            // Route resolves UUID first, then fetches linked references
+            callLogseq
+                .mockResolvedValueOnce(MOCK_PAGE)                   // GET_PAGE
+                .mockResolvedValueOnce([[MOCK_PAGE, [MOCK_BLOCK]]]); // GET_PAGE_LINKED_REFERENCES
 
             const res = await app.inject({
                 method: 'GET',
@@ -201,8 +237,41 @@ describe('Pages routes', () => {
             expect(body.data[0].blocks).toHaveLength(1);
         });
 
+        it('calls getPageLinkedReferences with the resolved UUID', async () => {
+            callLogseq
+                .mockResolvedValueOnce(MOCK_PAGE)
+                .mockResolvedValueOnce([[MOCK_PAGE, [MOCK_BLOCK]]]);
+
+            await app.inject({
+                method: 'GET',
+                url: '/pages/test%20page/links',
+                headers: { Authorization: `Bearer ${viewerToken}` }
+            });
+
+            expect(callLogseq).toHaveBeenNthCalledWith(
+                1, 'logseq.Editor.getPage', ['test page']
+            );
+            expect(callLogseq).toHaveBeenNthCalledWith(
+                2, 'logseq.Editor.getPageLinkedReferences', [MOCK_PAGE.uuid]
+            );
+        });
+
+        it('returns 404 when page does not exist', async () => {
+            callLogseq.mockResolvedValueOnce(null); // GET_PAGE returns null
+
+            const res = await app.inject({
+                method: 'GET',
+                url: '/pages/nonexistent/links',
+                headers: { Authorization: `Bearer ${viewerToken}` }
+            });
+
+            expect(res.statusCode).toBe(404);
+        });
+
         it('returns 200 with empty list when no references', async () => {
-            callLogseq.mockResolvedValueOnce(null);
+            callLogseq
+                .mockResolvedValueOnce(MOCK_PAGE)  // GET_PAGE succeeds
+                .mockResolvedValueOnce(null);       // but no linked references
 
             const res = await app.inject({
                 method: 'GET',
@@ -214,11 +283,10 @@ describe('Pages routes', () => {
             expect(JSON.parse(res.body).data).toHaveLength(0);
         });
 
-        it('returns 403 when role lacks permission', async () => {
-            // viewer has pages:read so this should succeed; let's verify
-            // by testing a role that truly cannot exist — instead confirm
-            // that even viewer can reach this endpoint
-            callLogseq.mockResolvedValueOnce([]);
+        it('viewer can reach this endpoint', async () => {
+            callLogseq
+                .mockResolvedValueOnce(MOCK_PAGE)
+                .mockResolvedValueOnce([]);
 
             const res = await app.inject({
                 method: 'GET',

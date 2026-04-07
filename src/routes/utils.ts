@@ -1,6 +1,33 @@
 import type { PaginationMeta } from '../types/api';
 
 /**
+ * Renames Logseq-internal page fields to clean REST names:
+ *   originalName → name   (display name, user-facing case)
+ *   name         → normalizedName  (lower-case, Logseq's internal identifier)
+ *   journal      → isJournal
+ *
+ * All other fields pass through unchanged. Works on both Editor API responses
+ * and on objects already processed by normalizeDatascriptEntity.
+ */
+export function normalizePageForApi(
+    page: Record<string, unknown>
+): Record<string, unknown> {
+    const out: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(page)) {
+        if (key === 'originalName') {
+            out['name'] = value;
+        } else if (key === 'name') {
+            out['normalizedName'] = value;
+        } else if (key === 'journal') {
+            out['isJournal'] = value;
+        } else {
+            out[key] = value;
+        }
+    }
+    return out;
+}
+
+/**
  * Normalises a single entity returned by logseq.DB.datascriptQuery.
  * Datascript returns Clojure-style keys: kebab-case (`original-name`) and
  * predicate suffixes (`journal?`).  This converts them to camelCase so they

@@ -117,8 +117,11 @@ describe('Namespace page encoding', () => {
     // ── GET /pages/:name/blocks ─────────────────────────────────────────────
 
     describe('GET /pages/:name/blocks with %2F-encoded name', () => {
-        it('decodes %2F and passes the slash to Logseq', async () => {
-            callLogseq.mockResolvedValueOnce([MOCK_BLOCK]);
+        it('decodes %2F and passes the slash to getPage', async () => {
+            // Route resolves UUID via getPage first; blocks are fetched by UUID
+            callLogseq
+                .mockResolvedValueOnce(NAMESPACE_PAGE)  // GET_PAGE
+                .mockResolvedValueOnce([MOCK_BLOCK]);    // GET_PAGE_BLOCKS_TREE
 
             const res = await app.inject({
                 method: 'GET',
@@ -127,9 +130,13 @@ describe('Namespace page encoding', () => {
             });
 
             expect(res.statusCode).toBe(200);
-            expect(callLogseq).toHaveBeenCalledWith(
-                'logseq.Editor.getPageBlocksTree',
-                ['projects/alpha']
+            // The decoded name must be passed to getPage
+            expect(callLogseq).toHaveBeenNthCalledWith(
+                1, 'logseq.Editor.getPage', ['projects/alpha']
+            );
+            // getPageBlocksTree receives the UUID, not the page name
+            expect(callLogseq).toHaveBeenNthCalledWith(
+                2, 'logseq.Editor.getPageBlocksTree', [NAMESPACE_PAGE.uuid]
             );
         });
     });
@@ -137,8 +144,11 @@ describe('Namespace page encoding', () => {
     // ── GET /pages/:name/links ──────────────────────────────────────────────
 
     describe('GET /pages/:name/links with %2F-encoded name', () => {
-        it('decodes %2F and passes the slash to Logseq', async () => {
-            callLogseq.mockResolvedValueOnce([[NAMESPACE_PAGE, [MOCK_BLOCK]]]);
+        it('decodes %2F and passes the slash to getPage', async () => {
+            // Route resolves UUID via getPage first; links are fetched by UUID
+            callLogseq
+                .mockResolvedValueOnce(NAMESPACE_PAGE)                 // GET_PAGE
+                .mockResolvedValueOnce([[NAMESPACE_PAGE, [MOCK_BLOCK]]]); // GET_PAGE_LINKED_REFERENCES
 
             const res = await app.inject({
                 method: 'GET',
@@ -147,9 +157,11 @@ describe('Namespace page encoding', () => {
             });
 
             expect(res.statusCode).toBe(200);
-            expect(callLogseq).toHaveBeenCalledWith(
-                'logseq.Editor.getPageLinkedReferences',
-                ['projects/alpha']
+            expect(callLogseq).toHaveBeenNthCalledWith(
+                1, 'logseq.Editor.getPage', ['projects/alpha']
+            );
+            expect(callLogseq).toHaveBeenNthCalledWith(
+                2, 'logseq.Editor.getPageLinkedReferences', [NAMESPACE_PAGE.uuid]
             );
         });
     });

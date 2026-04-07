@@ -135,25 +135,28 @@ const SHARED_SCHEMAS = [
         $id: 'LogseqPage',
         type: 'object',
         description: 'A Logseq page or journal entry',
-        required: ['id', 'uuid', 'name', 'originalName'],
+        required: ['id', 'uuid', 'name'],
         additionalProperties: true,
         properties: {
             id: { type: 'integer', description: 'Internal Logseq page ID' },
             uuid: { type: 'string', description: 'Page UUID' },
             name: {
                 type: 'string',
-                description: 'Normalised page name (lower-case)'
+                description:
+                    'Display name as entered by the user (original casing)'
             },
-            originalName: {
+            normalizedName: {
                 type: 'string',
-                description: 'Page name as entered by the user'
+                description:
+                    'Lower-case normalized page name ' +
+                    '(Logseq internal identifier, derived from `:block/name`)'
             },
             properties: {
                 type: 'object',
                 additionalProperties: true,
                 description: 'Page-level properties'
             },
-            journal: {
+            isJournal: {
                 type: 'boolean',
                 description: 'True when this page is a journal entry'
             },
@@ -211,7 +214,7 @@ const SHARED_SCHEMAS = [
         $id: 'LogseqTag',
         type: 'object',
         description: 'A Logseq tag (class page)',
-        required: ['id', 'uuid', 'name', 'originalName'],
+        required: ['id', 'uuid', 'name'],
         additionalProperties: true,
         properties: {
             id: { type: 'integer', description: 'Internal Logseq tag ID' },
