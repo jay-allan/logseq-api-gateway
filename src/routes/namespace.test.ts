@@ -117,11 +117,9 @@ describe('Namespace page encoding', () => {
     // ── GET /pages/:name/blocks ─────────────────────────────────────────────
 
     describe('GET /pages/:name/blocks with %2F-encoded name', () => {
-        it('decodes %2F and passes the slash to getPage', async () => {
-            // Route resolves UUID via getPage first; blocks are fetched by UUID
-            callLogseq
-                .mockResolvedValueOnce(NAMESPACE_PAGE)  // GET_PAGE
-                .mockResolvedValueOnce([MOCK_BLOCK]);    // GET_PAGE_BLOCKS_TREE
+        it('decodes %2F and passes the slash to getPageBlocksTree', async () => {
+            // getPageBlocksTree accepts page names directly — no UUID resolution
+            callLogseq.mockResolvedValueOnce([MOCK_BLOCK]);
 
             const res = await app.inject({
                 method: 'GET',
@@ -130,13 +128,9 @@ describe('Namespace page encoding', () => {
             });
 
             expect(res.statusCode).toBe(200);
-            // The decoded name must be passed to getPage
-            expect(callLogseq).toHaveBeenNthCalledWith(
-                1, 'logseq.Editor.getPage', ['projects/alpha']
-            );
-            // getPageBlocksTree receives the UUID, not the page name
-            expect(callLogseq).toHaveBeenNthCalledWith(
-                2, 'logseq.Editor.getPageBlocksTree', [NAMESPACE_PAGE.uuid]
+            expect(callLogseq).toHaveBeenCalledTimes(1);
+            expect(callLogseq).toHaveBeenCalledWith(
+                'logseq.Editor.getPageBlocksTree', ['projects/alpha']
             );
         });
     });

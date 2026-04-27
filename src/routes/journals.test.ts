@@ -124,6 +124,30 @@ describe('Journals routes', () => {
             expect(JSON.parse(res.body).data).toHaveLength(0);
         });
 
+        it('returns 200 when datascript result has no original-name', async () => {
+            // Some Logseq versions omit original-name from datascript results;
+            // the gateway must not throw "name is required" in that case.
+            callLogseq.mockResolvedValueOnce([
+                [{
+                    id: 10,
+                    uuid: 'cccccccc-0000-0000-0000-000000000001',
+                    name: 'jan 5th, 2024',
+                    'journal?': true,
+                    'journal-day': 20240105
+                }]
+            ]);
+
+            const res = await app.inject({
+                method: 'GET',
+                url: '/journals',
+                headers: { Authorization: `Bearer ${viewerToken}` }
+            });
+
+            expect(res.statusCode).toBe(200);
+            const [page] = JSON.parse(res.body).data;
+            expect(page.name).toBe('jan 5th, 2024');
+        });
+
         it('returns 401 without token', async () => {
             const res = await app.inject({
                 method: 'GET',

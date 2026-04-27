@@ -192,21 +192,11 @@ export default async function pagesRoute(
         async (request, reply) => {
             const { name } = request.params as { name: string };
 
-            // getPageBlocksTree validates its argument as a UUID at runtime,
-            // so we must resolve the page UUID before calling it.
-            const page = await callLogseq<LogseqPage | null>(
-                Methods.GET_PAGE,
-                [name]
-            );
-            if (!page) {
-                return reply.code(404).send({
-                    error: { code: 'NOT_FOUND', message: `Page '${name}' not found` }
-                });
-            }
-
+            // getPageBlocksTree accepts both a page name and a UUID.
+            // Pass the name directly — no UUID resolution needed.
             const blocks = await callLogseq<LogseqBlock[] | null>(
                 Methods.GET_PAGE_BLOCKS_TREE,
-                [page.uuid]
+                [name]
             );
 
             if (!blocks) {
@@ -282,6 +272,14 @@ export default async function pagesRoute(
                 return reply.code(404).send({
                     error: { code: 'NOT_FOUND', message: `Page '${name}' not found` }
                 });
+            }
+
+            // Guard: Logseq occasionally returns a page object without a uuid
+            // field. Passing undefined to getPageLinkedReferences causes a
+            // Logseq error: '"uuid" is required'. Return empty backlinks instead
+            // — the page exists but has no resolvable reference data.
+            if (!page.uuid) {
+                return reply.code(200).send({ data: [] });
             }
 
             // Logseq returns [[sourcePage, [block, ...]], ...] or null

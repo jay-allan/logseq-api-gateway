@@ -135,7 +135,7 @@ const SHARED_SCHEMAS = [
         $id: 'LogseqPage',
         type: 'object',
         description: 'A Logseq page or journal entry',
-        required: ['id', 'uuid', 'name'],
+        required: ['id', 'uuid'],
         additionalProperties: true,
         properties: {
             id: { type: 'integer', description: 'Internal Logseq page ID' },

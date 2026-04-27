@@ -152,10 +152,8 @@ describe('Pages routes', () => {
 
     describe('GET /pages/:name/blocks', () => {
         it('returns 200 with block tree', async () => {
-            // Route resolves page UUID first, then fetches blocks by UUID
-            callLogseq
-                .mockResolvedValueOnce(MOCK_PAGE)    // GET_PAGE
-                .mockResolvedValueOnce([MOCK_BLOCK]); // GET_PAGE_BLOCKS_TREE
+            // getPageBlocksTree accepts a page name directly — no UUID resolution
+            callLogseq.mockResolvedValueOnce([MOCK_BLOCK]);
 
             const res = await app.inject({
                 method: 'GET',
@@ -169,10 +167,8 @@ describe('Pages routes', () => {
             expect(body.data[0].uuid).toBe(MOCK_BLOCK.uuid);
         });
 
-        it('calls getPageBlocksTree with the resolved UUID, not the page name', async () => {
-            callLogseq
-                .mockResolvedValueOnce(MOCK_PAGE)
-                .mockResolvedValueOnce([MOCK_BLOCK]);
+        it('calls getPageBlocksTree with the decoded page name', async () => {
+            callLogseq.mockResolvedValueOnce([MOCK_BLOCK]);
 
             await app.inject({
                 method: 'GET',
@@ -180,34 +176,18 @@ describe('Pages routes', () => {
                 headers: { Authorization: `Bearer ${viewerToken}` }
             });
 
-            expect(callLogseq).toHaveBeenNthCalledWith(
-                1, 'logseq.Editor.getPage', ['test page']
-            );
-            expect(callLogseq).toHaveBeenNthCalledWith(
-                2, 'logseq.Editor.getPageBlocksTree', [MOCK_PAGE.uuid]
+            expect(callLogseq).toHaveBeenCalledTimes(1);
+            expect(callLogseq).toHaveBeenCalledWith(
+                'logseq.Editor.getPageBlocksTree', ['test page']
             );
         });
 
-        it('returns 404 when GET_PAGE returns null', async () => {
-            callLogseq.mockResolvedValueOnce(null); // GET_PAGE returns null
+        it('returns 404 when getPageBlocksTree returns null', async () => {
+            callLogseq.mockResolvedValueOnce(null);
 
             const res = await app.inject({
                 method: 'GET',
                 url: '/pages/nonexistent/blocks',
-                headers: { Authorization: `Bearer ${viewerToken}` }
-            });
-
-            expect(res.statusCode).toBe(404);
-        });
-
-        it('returns 404 when GET_PAGE_BLOCKS_TREE returns null', async () => {
-            callLogseq
-                .mockResolvedValueOnce(MOCK_PAGE)  // GET_PAGE succeeds
-                .mockResolvedValueOnce(null);       // but blocks tree fails
-
-            const res = await app.inject({
-                method: 'GET',
-                url: '/pages/test%20page/blocks',
                 headers: { Authorization: `Bearer ${viewerToken}` }
             });
 
@@ -281,6 +261,25 @@ describe('Pages routes', () => {
 
             expect(res.statusCode).toBe(200);
             expect(JSON.parse(res.body).data).toHaveLength(0);
+        });
+
+        it('returns 200 with empty list when getPage response has no uuid', async () => {
+            // Logseq occasionally returns a page object without a uuid field.
+            // Without the guard this propagates undefined to getPageLinkedReferences
+            // which throws '"uuid" is required'.
+            const pageWithoutUuid = { ...MOCK_PAGE, uuid: undefined };
+            callLogseq.mockResolvedValueOnce(pageWithoutUuid);
+
+            const res = await app.inject({
+                method: 'GET',
+                url: '/pages/test%20page/links',
+                headers: { Authorization: `Bearer ${viewerToken}` }
+            });
+
+            expect(res.statusCode).toBe(200);
+            expect(JSON.parse(res.body).data).toHaveLength(0);
+            // Must NOT make a second Logseq call with undefined uuid
+            expect(callLogseq).toHaveBeenCalledTimes(1);
         });
 
         it('viewer can reach this endpoint', async () => {

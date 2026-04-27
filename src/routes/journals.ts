@@ -70,11 +70,19 @@ export default async function journalsRoute(
             );
 
             const pages = (raw ?? [])
-                .map(([page]) => normalizePageForApi(
-                    normalizeDatascriptEntity(
-                        page as unknown as Record<string, unknown>
-                    )
-                ))
+                .map(([page]) => {
+                    const p = normalizePageForApi(
+                        normalizeDatascriptEntity(
+                            page as unknown as Record<string, unknown>
+                        )
+                    );
+                    // Datascript results sometimes omit original-name; fall back
+                    // to the normalized name so the serializer always has a name.
+                    if (p['name'] === undefined && p['normalizedName'] !== undefined) {
+                        p['name'] = p['normalizedName'];
+                    }
+                    return p;
+                })
                 .sort((a, b) =>
                     ((b.journalDay as number) ?? 0) -
                     ((a.journalDay as number) ?? 0)

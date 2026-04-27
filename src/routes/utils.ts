@@ -24,6 +24,12 @@ export function normalizePageForApi(
             out[key] = value;
         }
     }
+    // When the raw page has no originalName (some Logseq datascript results
+    // omit it), fall back to the normalizedName so the LogseqPage schema's
+    // required `name` field is always satisfied.
+    if (out['name'] === undefined && out['normalizedName'] !== undefined) {
+        out['name'] = out['normalizedName'];
+    }
     return out;
 }
 
